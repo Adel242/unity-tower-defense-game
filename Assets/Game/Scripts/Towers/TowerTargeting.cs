@@ -36,7 +36,8 @@ public class TowerTargeting : MonoBehaviour
         }
     }
 
-    private void UpdateTarget(){
+private void UpdateTarget()
+{
     if (target != null)
     {
         float currentTargetDistance = Vector3.Distance(
@@ -50,10 +51,8 @@ public class TowerTargeting : MonoBehaviour
         }
 
         target = null;
-
     }
 
-    // Solo buscamos uno nuevo cuando no tenemos objetivo.
     GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
 
     float closestDistance = Mathf.Infinity;
@@ -73,9 +72,16 @@ public class TowerTargeting : MonoBehaviour
         }
     }
 
-    if (closestEnemy != null){
-        target = closestEnemy.transform;
-        fireCooldown = firstShotDelay;
+    if (closestEnemy != null)
+    {
+        EnemyMovement enemyMovement =
+            closestEnemy.GetComponent<EnemyMovement>();
+
+        if (enemyMovement != null && enemyMovement.TargetPoint != null)
+        {
+            target = enemyMovement.TargetPoint;
+            fireCooldown = firstShotDelay;
+        }
     }
 }
 
