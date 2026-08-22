@@ -6,6 +6,9 @@ public class BaseHealth : MonoBehaviour
 
     private float currentHealth;
 
+    public float CurrentHealth => currentHealth;
+    public float MaxHealth => maxHealth;
+
     private void Awake()
     {
         currentHealth = maxHealth;
@@ -15,11 +18,15 @@ public class BaseHealth : MonoBehaviour
     {
         currentHealth -= damage;
 
+        if (currentHealth < 0f)
+        {
+            currentHealth = 0f;
+        }
+
         Debug.Log($"Base HP: {currentHealth}");
 
         if (currentHealth <= 0f)
         {
-            currentHealth = 0f;
             Die();
         }
     }
