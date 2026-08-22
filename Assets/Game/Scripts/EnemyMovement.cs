@@ -7,6 +7,8 @@ public class EnemyMovement : MonoBehaviour
     [SerializeField] private float speed = 3f;
     [SerializeField] private float rotationSpeed = 270f;
     [SerializeField] private Transform targetPoint;
+    [SerializeField] private float baseDamage = 10f;
+    private BaseHealth playerBase;
 
     public Transform TargetPoint => targetPoint;
 
@@ -38,8 +40,10 @@ public class EnemyMovement : MonoBehaviour
         {
             currentWaypointIndex++;
 
-            if (currentWaypointIndex >= waypoints.Length)
-            {
+            if (currentWaypointIndex >= waypoints.Length){
+                if (playerBase != null){
+                    playerBase.TakeDamage(baseDamage);
+                }
                 Destroy(gameObject);
             }
         }
@@ -62,5 +66,10 @@ public class EnemyMovement : MonoBehaviour
             targetRotation,
             rotationSpeed * Time.deltaTime
         );
+    }
+
+    private void Start()
+    {
+        playerBase = FindFirstObjectByType<BaseHealth>();
     }
 }

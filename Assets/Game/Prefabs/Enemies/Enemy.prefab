@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 5809294375192691822}
   - component: {fileID: 7965923175580127278}
   - component: {fileID: 7073668099735938551}
+  - component: {fileID: 1515647261755808507}
   m_Layer: 0
   m_Name: Enemy
   m_TagString: Enemy
@@ -166,9 +167,23 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   visualRoot: {fileID: 4072664872615736450}
-  speed: 1
+  speed: 2
   rotationSpeed: 270
   targetPoint: {fileID: 4437825524625146125}
+  baseDamage: 10
+--- !u!114 &1515647261755808507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6183127782950570785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7683c30e280e3f4e8fa38c0768229a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
+  maxHealth: 250
 --- !u!1 &8168046216321419226
 GameObject:
   m_ObjectHideFlags: 0

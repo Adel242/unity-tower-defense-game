@@ -259,15 +259,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 542e996e8e687dc4f83efe78bac2ffa8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerTargeting
-  range: 8
+  towerData: {fileID: 11400000, guid: 65c51f358bc791d4cbb3cdc5c5a55f47, type: 2}
   turretHead: {fileID: 229000836713198615}
-  rotationSpeed: 250
-  searchRotationSpeed: 100
-  aimTolerance: 20
   projectilePrefab: {fileID: 7887798626595715749, guid: 711881ca991dc8a4ab4f2b9f4002e7d6, type: 3}
   firePoint: {fileID: 2874052105688553458}
-  fireRate: 2
-  firstShotDelay: 0.25
 --- !u!1 &4836462185927362606
 GameObject:
   m_ObjectHideFlags: 0
