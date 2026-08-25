@@ -1,28 +1,30 @@
 using UnityEngine;
 
-public class EnemyMovement : MonoBehaviour
-{
+public class EnemyMovement : MonoBehaviour{
+    [SerializeField] private EnemyData enemyData;
     [SerializeField] private Transform[] waypoints;
     [SerializeField] private Transform visualRoot;
-    [SerializeField] private float speed = 3f;
-    [SerializeField] private float rotationSpeed = 270f;
     [SerializeField] private Transform targetPoint;
-    [SerializeField] private float baseDamage = 10f;
-    private BaseHealth playerBase;
 
     public Transform TargetPoint => targetPoint;
 
     private int currentWaypointIndex = 0;
+    private BaseHealth playerBase;
 
-    public void SetWaypoints(Transform[] newWaypoints)
-    {
+    private void Start(){
+        playerBase = FindFirstObjectByType<BaseHealth>();
+    }
+
+    public void SetWaypoints(Transform[] newWaypoints){
         waypoints = newWaypoints;
     }
 
-    private void Update()
-    {
-        if (waypoints == null || waypoints.Length == 0)
-        {
+    private void Update(){
+        if (enemyData == null){
+            return;
+        }
+
+        if (waypoints == null || waypoints.Length == 0){
             return;
         }
 
@@ -33,29 +35,27 @@ public class EnemyMovement : MonoBehaviour
         transform.position = Vector3.MoveTowards(
             transform.position,
             target.position,
-            speed * Time.deltaTime
+            enemyData.speed * Time.deltaTime
         );
 
-        if (Vector3.Distance(transform.position, target.position) < 0.1f)
-        {
+        if (Vector3.Distance(transform.position, target.position) < 0.1f){
             currentWaypointIndex++;
 
             if (currentWaypointIndex >= waypoints.Length){
                 if (playerBase != null){
-                    playerBase.TakeDamage(baseDamage);
+                    playerBase.TakeDamage(enemyData.baseDamage);
                 }
+
                 Destroy(gameObject);
             }
         }
     }
 
-    private void RotateVisualTowards(Transform target)
-    {
+    private void RotateVisualTowards(Transform target){
         Vector3 direction = target.position - transform.position;
         direction.y = 0f;
 
-        if (direction.sqrMagnitude < 0.001f)
-        {
+        if (direction.sqrMagnitude < 0.001f){
             return;
         }
 
@@ -64,12 +64,7 @@ public class EnemyMovement : MonoBehaviour
         visualRoot.rotation = Quaternion.RotateTowards(
             visualRoot.rotation,
             targetRotation,
-            rotationSpeed * Time.deltaTime
+            enemyData.rotationSpeed * Time.deltaTime
         );
-    }
-
-    private void Start()
-    {
-        playerBase = FindFirstObjectByType<BaseHealth>();
     }
 }
