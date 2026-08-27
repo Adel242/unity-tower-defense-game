@@ -23,8 +23,6 @@ public class BaseHealth : MonoBehaviour
             currentHealth = 0f;
         }
 
-        Debug.Log($"Base HP: {currentHealth}");
-
         if (currentHealth <= 0f)
         {
             Die();

@@ -6,6 +6,8 @@ public class EnemyHealth : MonoBehaviour{
     [SerializeField] private Image healthFill;
     [SerializeField] private DamagePopup damagePopupPrefab;
 
+    public event System.Action<EnemyHealth> Died;
+
     private float currentHealth;
 
     private void Awake(){
@@ -24,8 +26,6 @@ public class EnemyHealth : MonoBehaviour{
 
         currentHealth -= damage;
         currentHealth = Mathf.Max(currentHealth, 0f);
-
-        Debug.Log($"Enemy HP: {currentHealth}");
 
         UpdateHealthBar();
         ShowDamagePopup(damage);
@@ -61,6 +61,7 @@ public class EnemyHealth : MonoBehaviour{
     }
 
     private void Die(){
+        Died?.Invoke(this);
         Destroy(gameObject);
     }
 }

@@ -27,8 +27,6 @@ public static class BuildSceneSetup
         EditorBuildSettings.scenes = scenePaths
             .Select(path => new EditorBuildSettingsScene(path, true))
             .ToArray();
-
-        Debug.Log($"Build Scenes configured automatically: {scenePaths.Length} scenes.");
     }
 
     private static int GetSceneOrder(string path){

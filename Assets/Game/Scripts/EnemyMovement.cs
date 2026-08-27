@@ -1,70 +1,77 @@
 using UnityEngine;
+using UnityEngine.AI;
 
+[RequireComponent(typeof(NavMeshAgent))]
 public class EnemyMovement : MonoBehaviour{
     [SerializeField] private EnemyData enemyData;
-    [SerializeField] private Transform[] waypoints;
     [SerializeField] private Transform visualRoot;
     [SerializeField] private Transform targetPoint;
+    public event System.Action<EnemyMovement> ReachedDestination;
+    private bool hasDestination;
 
     public Transform TargetPoint => targetPoint;
 
-    private int currentWaypointIndex = 0;
+    private NavMeshAgent agent;
     private BaseHealth playerBase;
+    private bool reachedDestination;
+
+private void Awake(){
+    agent = GetComponent<NavMeshAgent>();
+
+    if (enemyData != null){
+        agent.speed = enemyData.speed;
+        agent.angularSpeed = enemyData.rotationSpeed;
+    }
+
+    agent.updateRotation = true;
+}
 
     private void Start(){
         playerBase = FindFirstObjectByType<BaseHealth>();
     }
 
-    public void SetWaypoints(Transform[] newWaypoints){
-        waypoints = newWaypoints;
-    }
-
     private void Update(){
-        if (enemyData == null){
+        if (enemyData == null || reachedDestination || !hasDestination){
             return;
         }
 
-        if (waypoints == null || waypoints.Length == 0){
-            return;
-        }
-
-        Transform target = waypoints[currentWaypointIndex];
-
-        RotateVisualTowards(target);
-
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            target.position,
-            enemyData.speed * Time.deltaTime
-        );
-
-        if (Vector3.Distance(transform.position, target.position) < 0.1f){
-            currentWaypointIndex++;
-
-            if (currentWaypointIndex >= waypoints.Length){
-                if (playerBase != null){
-                    playerBase.TakeDamage(enemyData.baseDamage);
-                }
-
-                Destroy(gameObject);
-            }
-        }
+        CheckDestinationReached();
     }
 
-    private void RotateVisualTowards(Transform target){
-        Vector3 direction = target.position - transform.position;
-        direction.y = 0f;
-
-        if (direction.sqrMagnitude < 0.001f){
+    public void SetDestination(Transform destination){
+        if (destination == null){
             return;
         }
 
-        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        if (!agent.isOnNavMesh){
+            Debug.LogWarning($"{name} is not on the NavMesh.");
+            return;
+        }
 
-        visualRoot.rotation = Quaternion.RotateTowards(
-            visualRoot.rotation,
-            targetRotation,
-            enemyData.rotationSpeed * Time.deltaTime
-        );
+        agent.SetDestination(destination.position);
+        hasDestination = true;
+    }
+
+    private void CheckDestinationReached(){
+        if (agent.pathPending){
+            return;
+        }
+
+        if (agent.remainingDistance > agent.stoppingDistance + 0.1f){
+            return;
+        }
+
+        if (agent.hasPath && agent.velocity.sqrMagnitude > 0.01f){
+            return;
+        }
+
+        reachedDestination = true;
+
+        if (playerBase != null){
+            playerBase.TakeDamage(enemyData.baseDamage);
+        }
+        
+        ReachedDestination?.Invoke(this);
+        Destroy(gameObject);
     }
 }
