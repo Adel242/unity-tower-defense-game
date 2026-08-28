@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/Game.unity
     guid: c7a1584225aea1343ae5d541e03aac8f
+  - enabled: 1
+    path: Assets/Game/Scenes/PauseMenu.unity
+    guid: 5579c19285e620d42b01f4a1f27050a0
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
