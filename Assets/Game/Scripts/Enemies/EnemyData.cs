@@ -11,4 +11,6 @@ public class EnemyData : ScriptableObject{
     public float speed = 3f;
     public float rotationSpeed = 270f;
     public float baseDamage = 10f;
+
+    public int goldReward = 20;
 }

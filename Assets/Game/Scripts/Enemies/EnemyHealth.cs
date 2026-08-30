@@ -9,6 +9,7 @@ public class EnemyHealth : MonoBehaviour{
     public event System.Action<EnemyHealth> Died;
 
     private float currentHealth;
+    private PlayerGold playerGold;
 
     private void Awake(){
         if (enemyData == null){
@@ -17,6 +18,10 @@ public class EnemyHealth : MonoBehaviour{
 
         currentHealth = enemyData.maxHealth;
         UpdateHealthBar();
+    }
+
+    private void Start(){
+        playerGold = FindFirstObjectByType<PlayerGold>();
     }
 
     public void TakeDamage(float damage){
@@ -61,6 +66,10 @@ public class EnemyHealth : MonoBehaviour{
     }
 
     private void Die(){
+        if (playerGold != null && enemyData != null){
+            playerGold.AddGold(enemyData.goldReward);
+        }
+
         Died?.Invoke(this);
         Destroy(gameObject);
     }

@@ -17,4 +17,5 @@ public class TowerData : ScriptableObject
     public float aimTolerance = 20f;
 
     public float firstShotDelay = 0.25f;
+    public int cost = 100;
 }

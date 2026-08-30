@@ -5,6 +5,7 @@ public class TowerTargeting : MonoBehaviour {
     [SerializeField] private Transform turretHead;
     [SerializeField] private GameObject projectilePrefab;
     [SerializeField] private Transform firePoint;
+    public TowerData TowerData => towerData;
 
     private Transform target;
     private float fireCooldown = 0f;

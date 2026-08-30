@@ -3,10 +3,19 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class WaveUI : MonoBehaviour{
-    [SerializeField] private WaveManager waveManager;
     [SerializeField] private TMP_Text waveText;
     [SerializeField] private TMP_Text nextWaveText;
     [SerializeField] private Button startWaveButton;
+
+    private WaveManager waveManager;
+
+    private void Start(){
+        waveManager = FindFirstObjectByType<WaveManager>();
+
+        if (waveManager == null){
+            Debug.LogWarning("WaveManager was not found.");
+        }
+    }
 
     private void Update(){
         if (waveManager == null){
@@ -28,6 +37,10 @@ public class WaveUI : MonoBehaviour{
     }
 
     public void StartNextWaveNow(){
+        if (waveManager == null){
+            return;
+        }
+
         waveManager.StartNextWaveNow();
     }
 }
