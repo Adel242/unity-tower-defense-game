@@ -15,11 +15,19 @@ public class WaveManager : MonoBehaviour{
     private int enemiesAlive;
 
     private float nextWaveTimer;
+
+    private bool waitingForFirstWave;
     private bool waitingForNextWave;
     private bool skipWait;
 
-    public int CurrentWaveNumber => currentWaveIndex + 1;
+    public int CurrentWaveNumber => Mathf.Min(
+        currentWaveIndex + 1,
+        waves.Length
+    );
+
     public float NextWaveTimer => nextWaveTimer;
+
+    public bool WaitingForFirstWave => waitingForFirstWave;
     public bool WaitingForNextWave => waitingForNextWave;
 
 #if UNITY_EDITOR
@@ -65,6 +73,12 @@ public class WaveManager : MonoBehaviour{
     }
 
     private IEnumerator RunWaves(){
+        waitingForFirstWave = true;
+
+        while (waitingForFirstWave){
+            yield return null;
+        }
+
         for (
             currentWaveIndex = 0;
             currentWaveIndex < waves.Length;
@@ -110,11 +124,14 @@ public class WaveManager : MonoBehaviour{
     }
 
     public void StartNextWaveNow(){
-        if (!waitingForNextWave){
+        if (waitingForFirstWave){
+            waitingForFirstWave = false;
             return;
         }
 
-        skipWait = true;
+        if (waitingForNextWave){
+            skipWait = true;
+        }
     }
 
     private void OnEnemySpawned(GameObject enemy){
@@ -135,19 +152,25 @@ public class WaveManager : MonoBehaviour{
     private void OnEnemyDied(EnemyHealth enemyHealth){
         enemyHealth.Died -= OnEnemyDied;
 
-        EnemyMovement movement = enemyHealth.GetComponent<EnemyMovement>();
+        EnemyMovement movement =
+            enemyHealth.GetComponent<EnemyMovement>();
 
         if (movement != null){
-            movement.ReachedDestination -= OnEnemyReachedDestination;
+            movement.ReachedDestination -=
+                OnEnemyReachedDestination;
         }
 
         EnemyRemoved();
     }
 
-    private void OnEnemyReachedDestination(EnemyMovement enemyMovement){
-        enemyMovement.ReachedDestination -= OnEnemyReachedDestination;
+    private void OnEnemyReachedDestination(
+        EnemyMovement enemyMovement
+    ){
+        enemyMovement.ReachedDestination -=
+            OnEnemyReachedDestination;
 
-        EnemyHealth health = enemyMovement.GetComponent<EnemyHealth>();
+        EnemyHealth health =
+            enemyMovement.GetComponent<EnemyHealth>();
 
         if (health != null){
             health.Died -= OnEnemyDied;

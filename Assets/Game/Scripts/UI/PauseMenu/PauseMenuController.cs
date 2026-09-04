@@ -5,21 +5,38 @@ using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 #endif
 
-public class PauseMenuController : MonoBehaviour
-{
+public class PauseMenuController : MonoBehaviour{
     public GameObject pauseMenuUI;
+    public GameObject pauseBackground;
+
+    private TowerPlacementManager towerPlacementManager;
+    private OptionsMenuController optionsMenuController;
 
     private bool gameIsPaused;
 
-    private void Start()
-    {
+    private void Start(){
         pauseMenuUI.SetActive(false);
+
+        if (pauseBackground != null){
+            pauseBackground.SetActive(false);
+        }
+
+        optionsMenuController =
+            GetComponent<OptionsMenuController>();
+
+        if (optionsMenuController != null){
+            optionsMenuController.ResetPanels();
+            pauseMenuUI.SetActive(false);
+        }
+
         Time.timeScale = 1f;
         gameIsPaused = false;
+
+        towerPlacementManager =
+            FindFirstObjectByType<TowerPlacementManager>();
     }
 
-    private void Update()
-    {
+    private void Update(){
         bool escapePressed;
 
 #if ENABLE_INPUT_SYSTEM
@@ -30,47 +47,74 @@ public class PauseMenuController : MonoBehaviour
         escapePressed = Input.GetKeyDown(KeyCode.Escape);
 #endif
 
-        if (escapePressed)
-        {
-            if (gameIsPaused)
-            {
-                ResumeGame();
+        if (!escapePressed){
+            return;
+        }
+
+        if (
+            towerPlacementManager != null &&
+            towerPlacementManager.IsBuildMode
+        ){
+            towerPlacementManager.CancelBuildMode();
+            return;
+        }
+
+        if (gameIsPaused){
+            if (
+                optionsMenuController != null &&
+                optionsMenuController.HandleEscape()
+            ){
+                return;
             }
-            else
-            {
-                PauseGame();
-            }
+
+            ResumeGame();
+        }
+        else{
+            PauseGame();
         }
     }
 
-    public void PauseGame()
-    {
-        pauseMenuUI.SetActive(true);
+    public void PauseGame(){
+        if (optionsMenuController != null){
+            optionsMenuController.ResetPanels();
+        }
+        else{
+            pauseMenuUI.SetActive(true);
+        }
+
+        if (pauseBackground != null){
+            pauseBackground.SetActive(true);
+        }
+
         Time.timeScale = 0f;
         gameIsPaused = true;
     }
 
-    public void ResumeGame()
-    {
+    public void ResumeGame(){
         pauseMenuUI.SetActive(false);
+
+        if (pauseBackground != null){
+            pauseBackground.SetActive(false);
+        }
+
         Time.timeScale = 1f;
         gameIsPaused = false;
     }
 
-    public void RestartLevel()
-    {
+    public void RestartLevel(){
         Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+
+        SceneManager.LoadScene(
+            SceneManager.GetActiveScene().name
+        );
     }
 
-    public void GoToMainMenu()
-    {
+    public void GoToMainMenu(){
         Time.timeScale = 1f;
         SceneManager.LoadScene("MainMenu");
     }
 
-    public void QuitGame()
-    {
+    public void QuitGame(){
         Time.timeScale = 1f;
         Debug.Log("Saliendo del juego...");
         Application.Quit();

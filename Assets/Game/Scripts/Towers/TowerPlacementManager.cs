@@ -5,13 +5,24 @@ public class TowerPlacementManager : MonoBehaviour{
     [SerializeField] private Camera mainCamera;
     [SerializeField] private LayerMask buildableLayer;
     [SerializeField] private LayerMask blockedLayer;
+    [SerializeField] private LayerMask turretLayer;
+
     [SerializeField] private GameObject towerPrefab;
+    [SerializeField] private float minimumTurretDistance = 1f;
+
+    [SerializeField] private Material validPreviewMaterial;
+    [SerializeField] private Material invalidPreviewMaterial;
+
+    public bool IsBuildMode => isBuildMode;
 
     private GameObject towerPreview;
     private PlayerGold playerGold;
 
+    private bool isBuildMode;
     private bool canPlaceTower;
     private Vector3 placementPosition;
+
+    private Renderer[] previewRenderers;
 
     private void Start(){
         playerGold = FindFirstObjectByType<PlayerGold>();
@@ -21,6 +32,10 @@ public class TowerPlacementManager : MonoBehaviour{
         }
 
         CreatePreview();
+
+        if (towerPreview != null){
+            towerPreview.SetActive(false);
+        }
     }
 
     private void Update(){
@@ -32,6 +47,10 @@ public class TowerPlacementManager : MonoBehaviour{
             return;
         }
 
+        if (!isBuildMode){
+            return;
+        }
+
         UpdatePreview();
 
         if (
@@ -39,6 +58,28 @@ public class TowerPlacementManager : MonoBehaviour{
             Mouse.current.leftButton.wasPressedThisFrame
         ){
             PlaceTower();
+        }
+
+        if (Mouse.current.rightButton.wasPressedThisFrame){
+            CancelBuildMode();
+        }
+    }
+
+    public void StartBuildMode(){
+        if (towerPreview == null){
+            return;
+        }
+
+        isBuildMode = true;
+        towerPreview.SetActive(true);
+    }
+
+    public void CancelBuildMode(){
+        isBuildMode = false;
+        canPlaceTower = false;
+
+        if (towerPreview != null){
+            towerPreview.SetActive(false);
         }
     }
 
@@ -53,25 +94,36 @@ public class TowerPlacementManager : MonoBehaviour{
             1000f,
             buildableLayer
         )){
-            canPlaceTower = false;
             towerPreview.SetActive(false);
+            canPlaceTower = false;
             return;
         }
 
-        bool isBlocked = Physics.CheckSphere(
+        towerPreview.SetActive(true);
+
+        placementPosition = hit.point;
+        towerPreview.transform.position = placementPosition;
+
+        bool isOnBlockedArea = Physics.CheckSphere(
             hit.point,
             0.3f,
             blockedLayer
         );
 
-        canPlaceTower = !isBlocked;
+        bool isNearTurret = Physics.CheckSphere(
+            hit.point,
+            minimumTurretDistance,
+            turretLayer
+        );
 
-        towerPreview.SetActive(canPlaceTower);
+        bool hasEnoughGold = HasEnoughGold();
 
-        if (canPlaceTower){
-            placementPosition = hit.point;
-            towerPreview.transform.position = placementPosition;
-        }
+        canPlaceTower =
+            !isOnBlockedArea &&
+            !isNearTurret &&
+            hasEnoughGold;
+
+        UpdatePreviewMaterial();
     }
 
     private void CreatePreview(){
@@ -80,7 +132,6 @@ public class TowerPlacementManager : MonoBehaviour{
         }
 
         towerPreview = Instantiate(towerPrefab);
-
         towerPreview.name = $"{towerPrefab.name} (Preview)";
 
         TowerTargeting targeting =
@@ -88,6 +139,48 @@ public class TowerPlacementManager : MonoBehaviour{
 
         if (targeting != null){
             targeting.enabled = false;
+        }
+
+        Collider[] colliders =
+            towerPreview.GetComponentsInChildren<Collider>();
+
+        foreach (Collider collider in colliders){
+            collider.enabled = false;
+        }
+
+        previewRenderers =
+            towerPreview.GetComponentsInChildren<Renderer>();
+    }
+
+    private bool HasEnoughGold(){
+        if (playerGold == null){
+            return false;
+        }
+
+        TowerTargeting targeting =
+            towerPrefab.GetComponent<TowerTargeting>();
+
+        if (targeting == null || targeting.TowerData == null){
+            return false;
+        }
+
+        return playerGold.CanAfford(
+            targeting.TowerData.cost
+        );
+    }
+
+    private void UpdatePreviewMaterial(){
+        Material materialToUse =
+            canPlaceTower
+                ? validPreviewMaterial
+                : invalidPreviewMaterial;
+
+        if (materialToUse == null){
+            return;
+        }
+
+        foreach (Renderer previewRenderer in previewRenderers){
+            previewRenderer.material = materialToUse;
         }
     }
 
