@@ -55,11 +55,12 @@ public class EnemyHealth : MonoBehaviour{
 
         Vector3 popupPosition = transform.position + Vector3.up * 2.3f;
 
-        DamagePopup popup = Instantiate(
-            damagePopupPrefab,
+        DamagePopupPool popupPool =
+            DamagePopupPool.GetShared(damagePopupPrefab);
+
+        DamagePopup popup = popupPool.Get(
             popupPosition,
-            Quaternion.identity,
-            null
+            Quaternion.identity
         );
 
         popup.Setup(damage);

@@ -7,6 +7,7 @@ public class DamagePopup : MonoBehaviour{
     [SerializeField] private float moveSpeed = 1.5f;
 
     private float remainingLifetime;
+    private DamagePopupPool pool;
 
     private void Awake(){
         remainingLifetime = lifetime;
@@ -24,8 +25,17 @@ public class DamagePopup : MonoBehaviour{
         damageText.color = textColor;
 
         if (remainingLifetime <= 0f){
+            if (pool != null){
+                pool.Release(this);
+                return;
+            }
+
             Destroy(gameObject);
         }
+    }
+
+    public void SetPool(DamagePopupPool newPool){
+        pool = newPool;
     }
 
     public void Setup(float damage){
@@ -34,5 +44,19 @@ public class DamagePopup : MonoBehaviour{
         }
 
         damageText.text = Mathf.RoundToInt(damage).ToString();
+    }
+
+    public void ResetForPool(){
+        remainingLifetime = lifetime;
+
+        if (damageText == null){
+            return;
+        }
+
+        damageText.text = string.Empty;
+
+        Color textColor = damageText.color;
+        textColor.a = 1f;
+        damageText.color = textColor;
     }
 }

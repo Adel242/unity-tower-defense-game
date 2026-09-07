@@ -135,15 +135,14 @@ public class TowerTargeting : MonoBehaviour {
         }
     }
 
-    private void Shoot()
-    {
-        GameObject projectileObject = Instantiate(
-            projectilePrefab,
+    private void Shoot(){
+        ProjectilePool projectilePool =
+            ProjectilePool.GetShared(projectilePrefab);
+
+        Projectile projectile = projectilePool.Get(
             firePoint.position,
             firePoint.rotation
         );
-
-        Projectile projectile = projectileObject.GetComponent<Projectile>();
 
         projectile.SetTarget(target, towerData.damage);
     }

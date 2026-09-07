@@ -795,6 +795,50 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &981393465
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 981393467}
+  - component: {fileID: 981393466}
+  m_Layer: 0
+  m_Name: TowerSelectionManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &981393466
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 981393465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60e12c586e9747c3974754b952b9e515, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TowerSelectionManager
+--- !u!4 &981393467
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 981393465}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.22807, y: -6.5958, z: -4.25772}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1105641484
 GameObject:
   m_ObjectHideFlags: 0
@@ -1533,6 +1577,7 @@ GameObject:
   - component: {fileID: 1779995066}
   - component: {fileID: 1779995065}
   - component: {fileID: 1779995067}
+  - component: {fileID: 1779995068}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1599,13 +1644,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1779995063}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.14061569, y: -0.83227193, z: 0.24547082, w: -0.4767545}
-  m_LocalPosition: {x: -20.251959, y: 9.935959, z: 10.27157}
+  m_LocalRotation: {x: 0.3028329, y: 0.6333821, z: -0.29618368, w: 0.64760685}
+  m_LocalPosition: {x: -18.872486, y: 14.9378605, z: -3.4298093}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 55, y: 110, z: 0}
 --- !u!114 &1779995067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1650,6 +1695,25 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &1779995068
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1779995063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 397761a54f534ce7b920fd22e505b4ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraMovement
+  moveSpeed: 10
+  acceleration: 50
+  deceleration: 60
+  minX: -40
+  maxX: 40
+  minZ: -40
+  maxZ: 40
 --- !u!1 &1793314427
 GameObject:
   m_ObjectHideFlags: 0
@@ -1959,3 +2023,4 @@ SceneRoots:
   - {fileID: 123526009}
   - {fileID: 147777828}
   - {fileID: 322163687}
+  - {fileID: 981393467}

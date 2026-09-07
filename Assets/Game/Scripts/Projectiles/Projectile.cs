@@ -6,6 +6,11 @@ public class Projectile : MonoBehaviour{
     private Transform target;
     private Vector3 lastTargetPosition;
     private float damage;
+    private ProjectilePool pool;
+
+    public void SetPool(ProjectilePool newPool){
+        pool = newPool;
+    }
 
     public void SetTarget(Transform newTarget, float newDamage){
         target = newTarget;
@@ -41,6 +46,17 @@ public class Projectile : MonoBehaviour{
             }
         }
 
+        if (pool != null){
+            pool.Release(this);
+            return;
+        }
+
         Destroy(gameObject);
+    }
+
+    public void ResetForPool(){
+        target = null;
+        lastTargetPosition = Vector3.zero;
+        damage = 0f;
     }
 }
