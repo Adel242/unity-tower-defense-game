@@ -11,6 +11,7 @@ public class PauseMenuController : MonoBehaviour{
 
     private TowerPlacementManager towerPlacementManager;
     private OptionsMenuController optionsMenuController;
+    private ResolutionController resolutionController;
 
     private bool gameIsPaused;
 
@@ -24,9 +25,16 @@ public class PauseMenuController : MonoBehaviour{
         optionsMenuController =
             GetComponent<OptionsMenuController>();
 
+        resolutionController =
+            GetComponent<ResolutionController>();
+
         if (optionsMenuController != null){
             optionsMenuController.ResetPanels();
             pauseMenuUI.SetActive(false);
+        }
+
+        if (resolutionController != null){
+            resolutionController.ResetPanel();
         }
 
         Time.timeScale = 1f;
@@ -61,6 +69,13 @@ public class PauseMenuController : MonoBehaviour{
 
         if (gameIsPaused){
             if (
+                resolutionController != null &&
+                resolutionController.HandleEscape()
+            ){
+                return;
+            }
+
+            if (
                 optionsMenuController != null &&
                 optionsMenuController.HandleEscape()
             ){
@@ -75,6 +90,10 @@ public class PauseMenuController : MonoBehaviour{
     }
 
     public void PauseGame(){
+        if (resolutionController != null){
+            resolutionController.ResetPanel();
+        }
+
         if (optionsMenuController != null){
             optionsMenuController.ResetPanels();
         }
