@@ -9,10 +9,20 @@ public class TowerTargeting : MonoBehaviour {
 
     private Transform target;
     private float fireCooldown = 0f;
+    private float currentYaw;
 
-    private void Update()
+    private void OnEnable()
     {
-        if (towerData == null)
+        if (turretHead != null)
+        {
+            currentYaw = turretHead.eulerAngles.y;
+        }
+    }
+
+    // Apply aiming after Animator updates the imported tower bones.
+    private void LateUpdate()
+    {
+        if (towerData == null || turretHead == null || firePoint == null || projectilePrefab == null)
         {
             return;
         }
@@ -95,13 +105,13 @@ public class TowerTargeting : MonoBehaviour {
 
         float targetY = Quaternion.LookRotation(direction).eulerAngles.y;
 
-        float newY = Mathf.MoveTowardsAngle(
-            turretHead.eulerAngles.y,
+        currentYaw = Mathf.MoveTowardsAngle(
+            currentYaw,
             targetY,
             towerData.rotationSpeed * Time.deltaTime
         );
 
-        turretHead.rotation = Quaternion.Euler(0f, newY, 0f);
+        turretHead.rotation = Quaternion.Euler(0f, currentYaw, 0f);
     }
 
     private bool IsAimingAtTarget()
@@ -118,10 +128,8 @@ public class TowerTargeting : MonoBehaviour {
     }
 
     private void SearchForEnemies(){
-        turretHead.Rotate(
-            Vector3.up,
-            towerData.searchRotationSpeed * Time.deltaTime
-        );
+        currentYaw = Mathf.Repeat(currentYaw + towerData.searchRotationSpeed * Time.deltaTime, 360f);
+        turretHead.rotation = Quaternion.Euler(0f, currentYaw, 0f);
     }
 
     private void HandleShooting()
