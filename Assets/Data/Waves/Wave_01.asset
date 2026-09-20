@@ -15,3 +15,6 @@ MonoBehaviour:
   enemyPrefab: {fileID: 4663588816647234693, guid: 0764cf17c5c8c2c4badad5f2a5a698be, type: 3}
   enemyCount: 10
   timeBetweenEnemies: 0.5
+  healthMultiplier: 1
+  speedMultiplier: 1
+  goldRewardMultiplier: 1

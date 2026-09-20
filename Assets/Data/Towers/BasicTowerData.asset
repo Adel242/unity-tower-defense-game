@@ -20,3 +20,5 @@ MonoBehaviour:
   searchRotationSpeed: 100
   aimTolerance: 20
   firstShotDelay: 0.25
+  cost: 100
+  attackData: {fileID: 11400000, guid: b922b36b2c4c47d092c3fb2ba2a15a18, type: 2}

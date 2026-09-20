@@ -18,4 +18,8 @@ public class TowerData : ScriptableObject
 
     public float firstShotDelay = 0.25f;
     public int cost = 100;
+
+    [SerializeField] private TowerAttackData attackData;
+
+    public TowerAttackData AttackData => attackData;
 }

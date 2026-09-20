@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01bb1e74f0d54ce486ee44ef028c661c, type: 3}
+  m_Name: ArcaneAttackData
+  m_EditorClassIdentifier: Assembly-CSharp::ArcaneAttackData
+  projectileSpeed: 18
+  shotSound: {fileID: 8300000, guid: c3a09b408f394eea8d5e53ac09d4af0f, type: 3}
+  shotVolume: 0.3
+  impactSound: {fileID: 0}
+  impactVolume: 0.26

@@ -134,8 +134,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerTargeting
   towerData: {fileID: 11400000, guid: bb22188437beb3944a1bbc95019d2cd6, type: 2}
   turretHead: {fileID: 2473237577023390824}
-  projectilePrefab: {fileID: 7887798626595715749, guid: 711881ca991dc8a4ab4f2b9f4002e7d6, type: 3}
+  projectilePrefab: {fileID: 5700000000000000002, guid: d0c04355e0f5418aa97f1946bf35d018, type: 3}
   firePoint: {fileID: 3584613266233725646}
+  rotateTurret: 0
 --- !u!4 &8484543015437377419 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2057399525130512098, guid: 87089f0416c8d15429729893ba4b806e, type: 3}

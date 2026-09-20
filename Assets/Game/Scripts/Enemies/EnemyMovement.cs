@@ -14,6 +14,7 @@ public class EnemyMovement : MonoBehaviour{
     private NavMeshAgent agent;
     private BaseHealth playerBase;
     private bool reachedDestination;
+    private float speedMultiplier = 1f;
 
 private void Awake(){
     agent = GetComponent<NavMeshAgent>();
@@ -50,6 +51,14 @@ private void Awake(){
 
         agent.SetDestination(destination.position);
         hasDestination = true;
+    }
+
+    public void ApplyWaveSpeed(float multiplier){
+        speedMultiplier = Mathf.Max(0.1f, multiplier);
+
+        if (agent != null && enemyData != null){
+            agent.speed = enemyData.speed * speedMultiplier;
+        }
     }
 
     private void CheckDestinationReached(){

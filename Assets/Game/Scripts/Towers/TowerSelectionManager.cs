@@ -37,6 +37,14 @@ public class TowerSelectionManager : MonoBehaviour{
 
     // Run after UI events and construction have processed this frame's input.
     private void LateUpdate(){
+        if (
+            placementManager != null &&
+            placementManager.ConsumedPlacementClickThisFrame
+        ){
+            SelectTower(null);
+            return;
+        }
+
         if (placementManager != null && placementManager.IsBuildMode){
             SelectTower(null);
             return;

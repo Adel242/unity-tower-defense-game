@@ -5,11 +5,37 @@ public class TowerTargeting : MonoBehaviour {
     [SerializeField] private Transform turretHead;
     [SerializeField] private GameObject projectilePrefab;
     [SerializeField] private Transform firePoint;
+    [SerializeField] private bool rotateTurret = true;
     public TowerData TowerData => towerData;
 
     private Transform target;
     private float fireCooldown = 0f;
     private float currentYaw;
+
+    private void Awake()
+    {
+        ConfigureSelectionCollider();
+    }
+
+    private void ConfigureSelectionCollider()
+    {
+        int turretLayer = LayerMask.NameToLayer("Turrets");
+
+        if (turretLayer >= 0)
+        {
+            gameObject.layer = turretLayer;
+        }
+
+        if (TryGetComponent(out Collider _))
+        {
+            return;
+        }
+
+        CapsuleCollider collider = gameObject.AddComponent<CapsuleCollider>();
+        collider.center = new Vector3(0f, 1.35f, 0f);
+        collider.radius = 0.8f;
+        collider.height = 2.7f;
+    }
 
     private void OnEnable()
     {
@@ -31,14 +57,17 @@ public class TowerTargeting : MonoBehaviour {
 
         if (target != null)
         {
-            RotateTowardsTarget();
+            if (rotateTurret)
+            {
+                RotateTowardsTarget();
+            }
 
-            if (IsAimingAtTarget())
+            if (!rotateTurret || IsAimingAtTarget())
             {
                 HandleShooting();
             }
         }
-        else
+        else if (rotateTurret)
         {
             SearchForEnemies();
         }
@@ -152,7 +181,13 @@ public class TowerTargeting : MonoBehaviour {
             firePoint.rotation
         );
 
-        projectile.SetTarget(target, towerData.damage);
+        projectile.SetTarget(
+            target,
+            towerData.damage,
+            towerData.AttackData
+        );
+
+        TowerAttackAudio.PlayShot(towerData.AttackData, firePoint.position);
     }
 
     private void OnDrawGizmosSelected()

@@ -20,23 +20,26 @@ public class TowerInfoPanel : MonoBehaviour{
         }
 
         if (towerNameText != null){
-            towerNameText.text = data.towerName;
+            towerNameText.text =
+                $"<color=#8BD5FF><b>{data.towerName}</b></color>";
+            towerNameText.fontSize = 26f;
         }
 
         if (damageText != null){
-            damageText.text = $"Daño: {data.damage}";
+            damageText.text = $"DAÑO   <b>{data.damage}</b>";
         }
 
         if (rangeText != null){
-            rangeText.text = $"Rango: {data.range}";
+            rangeText.text = $"RANGO   <b>{data.range}</b>";
         }
 
         if (fireRateText != null){
-            fireRateText.text = $"Disparos/s: {data.fireRate}";
+            fireRateText.text = $"CADENCIA   <b>{data.fireRate}/s</b>";
         }
 
         if (costText != null){
-            costText.text = $"Coste: {data.cost}";
+            costText.text =
+                $"<color=#FFD36A>COSTE   <b>{data.cost} G</b></color>";
         }
 
         if (panelRoot != null){

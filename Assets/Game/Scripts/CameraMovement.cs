@@ -1,21 +1,45 @@
+using MoreMountains.Feedbacks;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Move before TowerPlacementManager calculates its mouse raycast.
 [DefaultExecutionOrder(-100)]
-public class CameraMovement : MonoBehaviour{
-    [SerializeField, Min(0f)] private float moveSpeed = 10f;
-    [SerializeField, Min(0f)] private float acceleration = 50f;
-    [SerializeField, Min(0f)] private float deceleration = 60f;
+public class CameraMovement : MonoBehaviour {
+    [SerializeField, Min(0f)] private float moveSpeed = 20f;
+    [SerializeField, Min(0f)] private float acceleration = 90f;
+    [SerializeField, Min(0f)] private float deceleration = 110f;
     [SerializeField] private float minX = -40f;
     [SerializeField] private float maxX = 40f;
     [SerializeField] private float minZ = -40f;
     [SerializeField] private float maxZ = 40f;
-
     private Vector3 currentVelocity;
+    private Quaternion baseRotation;
+    private MMF_Player movementFeedbacks;
+    private bool wasMoving;
+
+    private void Awake(){
+        baseRotation = transform.rotation;
+
+        if (GetComponent<MMCameraFieldOfViewShaker>() == null){
+            gameObject.AddComponent<MMCameraFieldOfViewShaker>();
+        }
+
+        movementFeedbacks = gameObject.AddComponent<MMF_Player>();
+        movementFeedbacks.AddFeedback(new MMF_CameraFieldOfView{
+            Duration = 0.4f,
+            RelativeFieldOfView = true,
+            RemapFieldOfViewZero = 0f,
+            RemapFieldOfViewOne = 0.1f,
+            ResetShakerValuesAfterShake = true,
+            ResetTargetValuesAfterShake = true
+        });
+        movementFeedbacks.Initialization();
+    }
 
     private void OnDisable(){
         currentVelocity = Vector3.zero;
+        wasMoving = false;
+        movementFeedbacks?.StopFeedbacks();
+        transform.rotation = baseRotation;
     }
 
     private void Update(){
@@ -23,6 +47,7 @@ public class CameraMovement : MonoBehaviour{
 
         if (keyboard == null || Time.timeScale == 0f){
             currentVelocity = Vector3.zero;
+            wasMoving = false;
             return;
         }
 
@@ -36,12 +61,17 @@ public class CameraMovement : MonoBehaviour{
 
         bool hasInput = horizontal != 0f || vertical != 0f;
 
+        if (hasInput && !wasMoving){
+            movementFeedbacks?.PlayFeedbacks(transform.position);
+        }
+        wasMoving = hasInput;
+
         if (!hasInput && currentVelocity == Vector3.zero){
             return;
         }
 
         // Yaw preserves horizontal directions even with a top-down camera.
-        Quaternion heading = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+        Quaternion heading = Quaternion.Euler(0f, baseRotation.eulerAngles.y, 0f);
         Vector3 direction = heading * new Vector3(horizontal, 0f, vertical).normalized;
         Vector3 targetVelocity = direction * moveSpeed;
         float changeRate = hasInput ? acceleration : deceleration;
@@ -74,4 +104,5 @@ public class CameraMovement : MonoBehaviour{
 
         transform.position = position;
     }
+
 }

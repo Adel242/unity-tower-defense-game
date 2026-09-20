@@ -1,3 +1,4 @@
+using MoreMountains.Feedbacks;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,11 +10,17 @@ public class TowerPlacementManager : MonoBehaviour{
 
     [SerializeField] private GameObject towerPrefab;
     [SerializeField] private float minimumTurretDistance = 1f;
+    [SerializeField, Min(0f)] private float footprintPadding = 0.08f;
+    [SerializeField, Range(4, 16)] private int footprintSamples = 12;
+    [SerializeField, Min(0.5f)] private float constructionCellSize = 2f;
 
     [SerializeField] private Material validPreviewMaterial;
     [SerializeField] private Material invalidPreviewMaterial;
+    [SerializeField] private AudioClip placementSound;
+    [SerializeField, Range(0f, 1f)] private float placementSoundVolume = 0.35f;
 
     public bool IsBuildMode => isBuildMode;
+    public bool ConsumedPlacementClickThisFrame { get; private set; }
 
     private GameObject towerPreview;
     private PlayerGold playerGold;
@@ -23,6 +30,9 @@ public class TowerPlacementManager : MonoBehaviour{
     private Vector3 placementPosition;
 
     private Renderer[] previewRenderers;
+    private float previewFootprintRadius = 0.5f;
+    private ConstructionGrid constructionGrid;
+    private LayerMask placementSurfaceLayer;
 
     private void Start(){
         playerGold = FindFirstObjectByType<PlayerGold>();
@@ -30,15 +40,39 @@ public class TowerPlacementManager : MonoBehaviour{
         if (playerGold == null){
             Debug.LogWarning("PlayerGold was not found.");
         }
+        else{
+            playerGold.GoldChanged += OnGoldChanged;
+        }
 
         CreatePreview();
 
         if (towerPreview != null){
             towerPreview.SetActive(false);
         }
+
+        constructionGrid = new ConstructionGrid(
+            transform,
+            constructionCellSize,
+            buildableLayer,
+            blockedLayer,
+            turretLayer
+        );
+        placementSurfaceLayer = buildableLayer |
+            blockedLayer |
+            LayerMask.GetMask("EnemyPath");
+    }
+
+    private void OnDestroy(){
+        if (playerGold != null){
+            playerGold.GoldChanged -= OnGoldChanged;
+        }
+
+        constructionGrid?.Dispose();
     }
 
     private void Update(){
+        ConsumedPlacementClickThisFrame = false;
+
         if (
             Mouse.current == null ||
             mainCamera == null ||
@@ -52,6 +86,7 @@ public class TowerPlacementManager : MonoBehaviour{
         }
 
         UpdatePreview();
+        constructionGrid?.Tick(Time.deltaTime);
 
         if (
             canPlaceTower &&
@@ -72,6 +107,21 @@ public class TowerPlacementManager : MonoBehaviour{
 
         isBuildMode = true;
         towerPreview.SetActive(true);
+        constructionGrid?.Show();
+    }
+
+    public void StartBuildMode(GameObject selectedTowerPrefab){
+        if (selectedTowerPrefab == null){
+            Debug.LogWarning("A tower prefab was not assigned to the build button.");
+            return;
+        }
+
+        if (towerPrefab != selectedTowerPrefab){
+            towerPrefab = selectedTowerPrefab;
+            ReplacePreview();
+        }
+
+        StartBuildMode();
     }
 
     public void CancelBuildMode(){
@@ -81,6 +131,8 @@ public class TowerPlacementManager : MonoBehaviour{
         if (towerPreview != null){
             towerPreview.SetActive(false);
         }
+
+        constructionGrid?.Hide();
     }
 
     private void UpdatePreview(){
@@ -92,36 +144,48 @@ public class TowerPlacementManager : MonoBehaviour{
             ray,
             out RaycastHit hit,
             1000f,
-            buildableLayer
+            placementSurfaceLayer
         )){
-            towerPreview.SetActive(false);
             canPlaceTower = false;
+            UpdatePreviewMaterial();
+            return;
+        }
+
+        if (
+            constructionGrid == null ||
+            !constructionGrid.TrySnap(hit.point, out placementPosition)
+        ){
+            placementPosition = hit.point;
+            towerPreview.transform.position = placementPosition;
+            towerPreview.SetActive(true);
+            canPlaceTower = false;
+            UpdatePreviewMaterial();
             return;
         }
 
         towerPreview.SetActive(true);
-
-        placementPosition = hit.point;
         towerPreview.transform.position = placementPosition;
 
         bool isOnBlockedArea = Physics.CheckSphere(
-            hit.point,
+            placementPosition,
             0.3f,
             blockedLayer
         );
 
         bool isNearTurret = Physics.CheckSphere(
-            hit.point,
+            placementPosition,
             minimumTurretDistance,
             turretLayer
         );
 
         bool hasEnoughGold = HasEnoughGold();
+        bool isFullySupported = IsFootprintFullySupported(placementPosition);
 
         canPlaceTower =
             !isOnBlockedArea &&
             !isNearTurret &&
-            hasEnoughGold;
+            hasEnoughGold &&
+            isFullySupported;
 
         UpdatePreviewMaterial();
     }
@@ -144,12 +208,84 @@ public class TowerPlacementManager : MonoBehaviour{
         Collider[] colliders =
             towerPreview.GetComponentsInChildren<Collider>();
 
+        previewFootprintRadius = CalculateFootprintRadius(colliders);
+
         foreach (Collider collider in colliders){
             collider.enabled = false;
         }
 
         previewRenderers =
             towerPreview.GetComponentsInChildren<Renderer>();
+    }
+
+    private float CalculateFootprintRadius(Collider[] colliders){
+        float radius = 0.5f;
+        Vector3 towerPosition = towerPreview.transform.position;
+
+        foreach (Collider collider in colliders){
+                if (collider.gameObject == towerPreview){
+                    continue;
+                }
+
+                Bounds bounds = collider.bounds;
+                Vector3 centerOffset = bounds.center - towerPosition;
+                float extentX = Mathf.Abs(centerOffset.x) + bounds.extents.x;
+            float extentZ = Mathf.Abs(centerOffset.z) + bounds.extents.z;
+            radius = Mathf.Max(radius, extentX, extentZ);
+        }
+
+        return radius + footprintPadding;
+    }
+
+    private bool IsFootprintFullySupported(Vector3 center){
+        int sampleCount = Mathf.Max(4, footprintSamples);
+
+        for (int index = 0; index < sampleCount; index++){
+            float angle = index * Mathf.PI * 2f / sampleCount;
+            Vector3 offset = new Vector3(
+                Mathf.Cos(angle),
+                0f,
+                Mathf.Sin(angle)
+            ) * previewFootprintRadius;
+
+            Vector3 rayOrigin = center + offset + Vector3.up * 1.5f;
+
+            if (!Physics.Raycast(
+                rayOrigin,
+                Vector3.down,
+                out RaycastHit supportHit,
+                3f,
+                buildableLayer
+            )){
+                return false;
+            }
+
+            if (Mathf.Abs(supportHit.point.y - center.y) > 0.08f){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void ReplacePreview(){
+        if (towerPreview != null){
+            towerPreview.SetActive(false);
+            Destroy(towerPreview);
+        }
+
+        CreatePreview();
+
+        if (towerPreview != null){
+            towerPreview.SetActive(false);
+        }
+
+    }
+
+    private void OnGoldChanged(int currentGold){
+        if (isBuildMode && !HasEnoughGold()){
+            CancelBuildMode();
+        }
     }
 
     private bool HasEnoughGold(){
@@ -202,10 +338,49 @@ public class TowerPlacementManager : MonoBehaviour{
             return;
         }
 
-        Instantiate(
+        ConsumedPlacementClickThisFrame = true;
+
+        GameObject placedTower = Instantiate(
             towerPrefab,
             placementPosition,
             towerPrefab.transform.rotation
         );
+
+        PlayPlacementFeedback(placedTower);
+        TowerAttackAudio.PlayPlacement(
+            placementSound,
+            placedTower.transform.position,
+            placementSoundVolume
+        );
+        constructionGrid?.Refresh();
+    }
+
+    private static void PlayPlacementFeedback(GameObject placedTower){
+        MMF_Player feedbacks = placedTower.AddComponent<MMF_Player>();
+        MMF_Position rise = new MMF_Position{
+            Mode = MMF_Position.Modes.AtoB,
+            Space = MMF_Position.Spaces.World,
+            AnimatePositionTarget = placedTower,
+            AnimatePositionDuration = 0.28f,
+            RelativePosition = true,
+            DeterminePositionsOnPlay = false,
+            InitialPosition = Vector3.down * 0.65f,
+            DestinationPosition = Vector3.zero
+        };
+        MMF_Scale scale = new MMF_Scale{
+            Mode = MMF_Scale.Modes.Additive,
+            AnimateScaleTarget = placedTower.transform,
+            AnimateScaleDuration = 0.3f,
+            RemapCurveZero = 0f,
+            RemapCurveOne = 0.14f,
+            UniformScaling = true,
+            AllowAdditivePlays = false,
+            DetermineScaleOnPlay = true
+        };
+
+        feedbacks.AddFeedback(rise);
+        feedbacks.AddFeedback(scale);
+        feedbacks.Initialization();
+        feedbacks.PlayFeedbacks(placedTower.transform.position);
     }
 }

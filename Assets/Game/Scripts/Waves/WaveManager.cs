@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Linq;
 using UnityEngine;
@@ -29,6 +30,8 @@ public class WaveManager : MonoBehaviour{
 
     public bool WaitingForFirstWave => waitingForFirstWave;
     public bool WaitingForNextWave => waitingForNextWave;
+
+    public event Action<int> WaveStarted;
 
 #if UNITY_EDITOR
     private void OnValidate(){
@@ -85,6 +88,7 @@ public class WaveManager : MonoBehaviour{
             currentWaveIndex++
         ){
             Debug.Log($"Starting Wave {CurrentWaveNumber}");
+            WaveStarted?.Invoke(CurrentWaveNumber);
 
             yield return StartCoroutine(
                 enemySpawner.SpawnWave(waves[currentWaveIndex])
@@ -95,6 +99,7 @@ public class WaveManager : MonoBehaviour{
             }
 
             Debug.Log($"Wave {CurrentWaveNumber} completed.");
+            TowerAttackAudio.StopAll();
 
             if (currentWaveIndex < waves.Length - 1){
                 yield return StartCoroutine(WaitForNextWave());

@@ -112,7 +112,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerTargeting
   towerData: {fileID: 11400000, guid: 5843fd83a9dea8e4086d402863a91745, type: 2}
   turretHead: {fileID: 3476034304692064236}
-  projectilePrefab: {fileID: 7887798626595715749, guid: 711881ca991dc8a4ab4f2b9f4002e7d6, type: 3}
+  projectilePrefab: {fileID: 5400000000000000002, guid: ce73c1b193d24387b2f4f289fb521b76, type: 3}
   firePoint: {fileID: 3431690978415011960}
 --- !u!4 &3431690978415011960 stripped
 Transform:

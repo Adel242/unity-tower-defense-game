@@ -22,9 +22,16 @@ public class EnemySpawner : MonoBehaviour{
                 Quaternion.identity
             );
 
-            EnemySpawned?.Invoke(enemy);
-
             EnemyMovement movement = enemy.GetComponent<EnemyMovement>();
+            EnemyHealth health = enemy.GetComponent<EnemyHealth>();
+
+            health?.ApplyWaveScaling(
+                waveData.HealthMultiplier,
+                waveData.GoldRewardMultiplier
+            );
+            movement?.ApplyWaveSpeed(waveData.SpeedMultiplier);
+
+            EnemySpawned?.Invoke(enemy);
 
             if (movement != null){
                 movement.SetDestination(destinationPoint);

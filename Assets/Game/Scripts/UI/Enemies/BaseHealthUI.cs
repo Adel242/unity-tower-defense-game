@@ -19,7 +19,18 @@ public class BaseHealthUI : MonoBehaviour{
             return;
         }
 
+        float healthRatio = baseHealth.MaxHealth > 0f
+            ? baseHealth.CurrentHealth / baseHealth.MaxHealth
+            : 0f;
+        string healthColor = healthRatio > 0.5f
+            ? "#7EE787"
+            : healthRatio > 0.25f ? "#FFD36A" : "#FF6B6B";
+
         healthText.text =
-            $"BASE HP: {baseHealth.CurrentHealth:0} / {baseHealth.MaxHealth:0}";
+            $"<mark=#111827E6><color={healthColor}><b>  BASE  " +
+            $"{baseHealth.CurrentHealth:0} / {baseHealth.MaxHealth:0}  " +
+            "</b></color></mark>";
+        healthText.fontSize = 22f;
+        healthText.raycastTarget = false;
     }
 }

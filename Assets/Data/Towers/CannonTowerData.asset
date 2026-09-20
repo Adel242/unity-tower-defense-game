@@ -21,3 +21,4 @@ MonoBehaviour:
   aimTolerance: 20
   firstShotDelay: 0.25
   cost: 100
+  attackData: {fileID: 11400000, guid: 58f2d7b7c5885ac46a0c291023719eaa, type: 2}
