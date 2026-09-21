@@ -9,6 +9,7 @@ public class TowerSelectionManager : MonoBehaviour{
     private TowerInfoPanel infoPanel;
     private TowerTargeting selectedTower;
     private int turretMask;
+    private LineRenderer selectionIndicator;
 
     private void Awake(){
         turretMask = LayerMask.GetMask("Turrets");
@@ -71,11 +72,27 @@ public class TowerSelectionManager : MonoBehaviour{
         Ray ray = mainCamera.ScreenPointToRay(mouse.position.ReadValue());
         TowerTargeting tower = null;
 
-        if (Physics.Raycast(ray, out RaycastHit hit, 1000f, turretMask, QueryTriggerInteraction.Ignore)){
-            tower = hit.collider.GetComponentInParent<TowerTargeting>();
+        RaycastHit[] hits = Physics.RaycastAll(
+            ray,
+            1000f,
+            Physics.AllLayers,
+            QueryTriggerInteraction.Ignore
+        );
 
-            if (tower != null && (!tower.isActiveAndEnabled || tower.TowerData == null)){
-                tower = null;
+        System.Array.Sort(hits, (first, second) =>
+            first.distance.CompareTo(second.distance));
+
+        foreach (RaycastHit hit in hits){
+            TowerTargeting hitTower =
+                hit.collider.GetComponentInParent<TowerTargeting>();
+
+            if (
+                hitTower != null &&
+                hitTower.isActiveAndEnabled &&
+                hitTower.TowerData != null
+            ){
+                tower = hitTower;
+                break;
             }
         }
 
@@ -84,7 +101,44 @@ public class TowerSelectionManager : MonoBehaviour{
 
     private void SelectTower(TowerTargeting tower){
         selectedTower = tower;
+        UpdateSelectionIndicator();
         RefreshPanel();
+    }
+
+    private void UpdateSelectionIndicator(){
+        if (selectionIndicator != null){
+            Destroy(selectionIndicator.gameObject);
+            selectionIndicator = null;
+        }
+
+        if (selectedTower == null){
+            return;
+        }
+
+        GameObject indicatorObject = new GameObject("Tower Selection Indicator");
+        indicatorObject.transform.SetParent(selectedTower.transform, false);
+        indicatorObject.transform.localPosition = new Vector3(0f, 0.035f, 0f);
+
+        selectionIndicator = indicatorObject.AddComponent<LineRenderer>();
+        selectionIndicator.useWorldSpace = false;
+        selectionIndicator.loop = true;
+        selectionIndicator.positionCount = 40;
+        selectionIndicator.startWidth = 0.045f;
+        selectionIndicator.endWidth = 0.045f;
+        selectionIndicator.material = new Material(Shader.Find("Sprites/Default"));
+        selectionIndicator.startColor = new Color(0.35f, 0.9f, 1f, 0.95f);
+        selectionIndicator.endColor = selectionIndicator.startColor;
+        selectionIndicator.sortingOrder = 20;
+
+        for (int index = 0; index < selectionIndicator.positionCount; index++){
+            float angle = index * Mathf.PI * 2f /
+                selectionIndicator.positionCount;
+            selectionIndicator.SetPosition(index, new Vector3(
+                Mathf.Cos(angle) * 1.25f,
+                0f,
+                Mathf.Sin(angle) * 1.25f
+            ));
+        }
     }
 
     private void RefreshPanel(){

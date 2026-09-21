@@ -27,9 +27,9 @@ public class BaseHealthUI : MonoBehaviour{
             : healthRatio > 0.25f ? "#FFD36A" : "#FF6B6B";
 
         healthText.text =
-            $"<mark=#111827E6><color={healthColor}><b>  BASE  " +
-            $"{baseHealth.CurrentHealth:0} / {baseHealth.MaxHealth:0}  " +
-            "</b></color></mark>";
+            $"<size=11><color=#9BAFC4>INTEGRIDAD</color></size>\n" +
+            $"<color={healthColor}><b>{baseHealth.CurrentHealth:0}</b></color> " +
+            $"<size=14><color=#9BAFC4>/ {baseHealth.MaxHealth:0}</color></size>";
         healthText.fontSize = 22f;
         healthText.raycastTarget = false;
     }

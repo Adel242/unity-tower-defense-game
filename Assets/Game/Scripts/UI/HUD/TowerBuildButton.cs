@@ -1,14 +1,42 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class TowerBuildButton : MonoBehaviour{
+public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,
+    ISelectHandler, IDeselectHandler{
     [SerializeField] private GameObject towerPrefab;
+    [SerializeField] private Image towerIcon;
 
     private TowerPlacementManager placementManager;
     private PlayerGold playerGold;
     private Button button;
     private int towerCost;
+    private TMP_Text label;
+    private bool hovered;
+    private bool focused;
+    private Vector3 restingScale;
+
+    private void Awake(){
+        restingScale = transform.localScale;
+    }
+
+    private void Update(){
+        bool highlighted = button != null && button.interactable && (hovered || focused);
+        Vector3 targetScale = restingScale * (highlighted ? 1.035f : 1f);
+        transform.localScale = Vector3.Lerp(transform.localScale, targetScale,
+            1f - Mathf.Exp(-18f * Time.unscaledDeltaTime));
+    }
+
+    public void OnPointerEnter(PointerEventData eventData){ hovered = true; }
+    public void OnPointerExit(PointerEventData eventData){ hovered = false; }
+    public void OnSelect(BaseEventData eventData){ focused = true; }
+    public void OnDeselect(BaseEventData eventData){ focused = false; }
+
+    private void OnDisable(){
+        hovered = focused = false;
+        transform.localScale = restingScale;
+    }
 
     private void Start(){
         placementManager =
@@ -64,25 +92,26 @@ public class TowerBuildButton : MonoBehaviour{
 
         towerCost = targeting.TowerData.cost;
 
-        TMP_Text label = GetComponentInChildren<TMP_Text>();
+        label = GetComponentInChildren<TMP_Text>();
 
         if (label != null){
             TowerData data = targeting.TowerData;
             label.text =
-                $"<mark=#111827D9><b>{data.towerName}</b></mark>\n" +
-                $"<mark=#111827D9><color=#FFD36A>{data.cost} G</color></mark>";
-            label.alignment = TextAlignmentOptions.Bottom;
-            label.fontSize = 14f;
+                $"<b>{data.towerName}</b>\n" +
+                $"<color=#F5CA70>{data.cost} G</color>";
+            label.alignment = TextAlignmentOptions.Center;
+            label.fontSize = 13f;
             label.enableAutoSizing = true;
-            label.fontSizeMin = 10f;
-            label.fontSizeMax = 14f;
-            label.margin = new Vector4(4f, 4f, 4f, 5f);
+            label.fontSizeMin = 11f;
+            label.fontSizeMax = 13f;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.margin = Vector4.zero;
             label.outlineColor = new Color32(10, 12, 18, 255);
-            label.outlineWidth = 0.18f;
+            label.outlineWidth = 0f;
             label.raycastTarget = false;
         }
 
-        Image icon = GetComponent<Image>();
+        Image icon = towerIcon != null ? towerIcon : GetComponent<Image>();
 
         if (icon != null){
             icon.color = Color.white;
@@ -91,12 +120,12 @@ public class TowerBuildButton : MonoBehaviour{
 
         if (button != null){
             ColorBlock colors = button.colors;
-            colors.normalColor = new Color32(225, 231, 239, 255);
-            colors.highlightedColor = Color.white;
-            colors.pressedColor = new Color32(155, 170, 190, 255);
-            colors.selectedColor = new Color32(205, 225, 245, 255);
-            colors.disabledColor = new Color32(80, 88, 102, 150);
-            colors.fadeDuration = 0.08f;
+            colors.normalColor = new Color32(27, 41, 57, 255);
+            colors.highlightedColor = new Color32(43, 80, 102, 255);
+            colors.pressedColor = new Color32(22, 61, 82, 255);
+            colors.selectedColor = new Color32(35, 66, 87, 255);
+            colors.disabledColor = new Color32(20, 26, 36, 230);
+            colors.fadeDuration = 0.12f;
             button.colors = colors;
         }
     }
@@ -107,5 +136,11 @@ public class TowerBuildButton : MonoBehaviour{
         }
 
         button.interactable = towerCost > 0 && currentGold >= towerCost;
+        if (towerIcon != null){
+            towerIcon.color = button.interactable ? Color.white : new Color(0.4f, 0.45f, 0.5f, 0.6f);
+        }
+        if (label != null){
+            label.alpha = button.interactable ? 1f : 0.4f;
+        }
     }
 }

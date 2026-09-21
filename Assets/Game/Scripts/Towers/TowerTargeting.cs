@@ -1,3 +1,4 @@
+using MoreMountains.Feedbacks;
 using UnityEngine;
 
 public class TowerTargeting : MonoBehaviour {
@@ -11,10 +12,81 @@ public class TowerTargeting : MonoBehaviour {
     private Transform target;
     private float fireCooldown = 0f;
     private float currentYaw;
+    private MMF_Player cannonRecoilFeedbacks;
+    private MMF_Player lightningSurgeFeedbacks;
 
     private void Awake()
     {
         ConfigureSelectionCollider();
+        ConfigureCannonRecoil();
+        ConfigureLightningSurge();
+    }
+
+    private void ConfigureCannonRecoil()
+    {
+        if (towerData == null ||
+            !(towerData.AttackData is CannonAttackData) ||
+            turretHead == null)
+        {
+            return;
+        }
+
+        cannonRecoilFeedbacks = gameObject.AddComponent<MMF_Player>();
+        cannonRecoilFeedbacks.AddFeedback(new MMF_PositionSpring
+        {
+            AnimatePositionTarget = turretHead,
+            DeclaredDuration = 0.18f,
+            Space = MMF_PositionSpring.Spaces.Local,
+            Mode = MMF_PositionSpring.Modes.Bump,
+            DampingX = 0.28f,
+            DampingY = 0.28f,
+            DampingZ = 0.24f,
+            FrequencyX = 13f,
+            FrequencyY = 13f,
+            FrequencyZ = 15f,
+            BumpPositionMin = new Vector3(0f, 0f, -0.1f),
+            BumpPositionMax = new Vector3(0f, 0f, -0.1f)
+        });
+        cannonRecoilFeedbacks.AddFeedback(new MMF_Scale
+        {
+            AnimateScaleTarget = turretHead,
+            Mode = MMF_Scale.Modes.Additive,
+            AnimateScaleDuration = 0.14f,
+            RemapCurveZero = 0f,
+            RemapCurveOne = 0.08f,
+            UniformScaling = true,
+            AllowAdditivePlays = false,
+            DetermineScaleOnPlay = false
+        });
+        cannonRecoilFeedbacks.Initialization();
+    }
+
+    private void ConfigureLightningSurge()
+    {
+        if (towerData == null ||
+            !(towerData.AttackData is LightningAttackData) ||
+            turretHead == null)
+        {
+            return;
+        }
+
+        lightningSurgeFeedbacks = gameObject.AddComponent<MMF_Player>();
+        lightningSurgeFeedbacks.AddFeedback(new MMF_PositionSpring
+        {
+            AnimatePositionTarget = turretHead,
+            DeclaredDuration = 0.2f,
+            Space = MMF_PositionSpring.Spaces.Local,
+            Mode = MMF_PositionSpring.Modes.Bump,
+            DampingX = 0.32f,
+            DampingY = 0.3f,
+            DampingZ = 0.32f,
+            FrequencyX = 16f,
+            FrequencyY = 18f,
+            FrequencyZ = 16f,
+            BumpPositionMin = new Vector3(0f, 0.035f, 0f),
+            BumpPositionMax = new Vector3(0f, 0.035f, 0f)
+        });
+        lightningSurgeFeedbacks.Initialization();
     }
 
     private void ConfigureSelectionCollider()
@@ -26,15 +98,18 @@ public class TowerTargeting : MonoBehaviour {
             gameObject.layer = turretLayer;
         }
 
-        if (TryGetComponent(out Collider _))
+        if (TryGetComponent(out CapsuleCollider capsuleCollider))
         {
+            capsuleCollider.center = new Vector3(0f, 1.8f, 0f);
+            capsuleCollider.radius = 1.5f;
+            capsuleCollider.height = 4.8f;
             return;
         }
 
         CapsuleCollider collider = gameObject.AddComponent<CapsuleCollider>();
-        collider.center = new Vector3(0f, 1.35f, 0f);
-        collider.radius = 0.8f;
-        collider.height = 2.7f;
+        collider.center = new Vector3(0f, 1.8f, 0f);
+        collider.radius = 1.5f;
+        collider.height = 4.8f;
     }
 
     private void OnEnable()
@@ -186,6 +261,24 @@ public class TowerTargeting : MonoBehaviour {
             towerData.damage,
             towerData.AttackData
         );
+
+        if (towerData.AttackData is CannonAttackData)
+        {
+            cannonRecoilFeedbacks?.PlayFeedbacks(firePoint.position);
+            TowerAttackVfx.PlayCannonMuzzleFlash(
+                firePoint.position,
+                firePoint.forward
+            );
+        }
+
+        if (towerData.AttackData is LightningAttackData)
+        {
+            lightningSurgeFeedbacks?.PlayFeedbacks(firePoint.position);
+            TowerAttackVfx.PlayLightningMuzzleFlash(
+                firePoint.position,
+                firePoint.forward
+            );
+        }
 
         TowerAttackAudio.PlayShot(towerData.AttackData, firePoint.position);
     }

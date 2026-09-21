@@ -37,13 +37,13 @@ public class GoldUI : MonoBehaviour{
         goldChangeText = Instantiate(goldText, goldText.transform.parent);
         goldChangeText.name = "Gold Change Popup";
         goldChangeText.text = string.Empty;
-        goldChangeText.fontSize = 16f;
+        goldChangeText.fontSize = 18f;
         goldChangeText.alignment = TextAlignmentOptions.Center;
         goldChangeText.raycastTarget = false;
 
         RectTransform changeRect = goldChangeText.rectTransform;
         changeRect.anchoredPosition =
-            goldText.rectTransform.anchoredPosition + Vector2.up * 34f;
+            goldText.rectTransform.anchoredPosition + new Vector2(100f, 0f);
         changeRect.sizeDelta = new Vector2(120f, 30f);
         goldChangeStartPosition = changeRect.anchoredPosition;
         goldChangeText.gameObject.SetActive(false);

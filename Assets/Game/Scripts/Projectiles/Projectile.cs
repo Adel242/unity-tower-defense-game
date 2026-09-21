@@ -18,6 +18,12 @@ public class Projectile : MonoBehaviour{
     private Vector3 attackOrigin;
     private float damage;
     private float movementSpeed;
+    private bool ballisticMovement;
+    private float ballisticElapsed;
+    private float ballisticDuration;
+    private Vector3 ballisticVelocity;
+    private Vector3 ballisticGravity;
+    private Vector3 ballisticImpactPosition;
     private TowerAttackData attackData;
     private HashSet<EnemyHealth> affectedEnemies;
     private ProjectilePool pool;
@@ -30,7 +36,7 @@ public class Projectile : MonoBehaviour{
     private void Awake(){
         defaultScale = transform.localScale;
         projectileRenderers = GetComponentsInChildren<Renderer>();
-        CreateEnergyTrail();
+        CreateEnergyTrail();    
         visualPulseOffset = Random.Range(0f, Mathf.PI * 2f);
     }
 
@@ -58,12 +64,36 @@ public class Projectile : MonoBehaviour{
         ConfigureVisuals();
 
         if (target != null){
-            lastTargetPosition = target.position;
+            if (attackData is CannonAttackData cannonAttack)
+            {
+                ConfigureBallisticMovement(cannonAttack);
+            }
+            else
+            {
+                lastTargetPosition = target.position;
+            }
         }
     }
 
     private void Update(){
         UpdateArcaneVisual();
+
+        if (ballisticMovement)
+        {
+            ballisticElapsed += Time.deltaTime;
+            transform.position = attackOrigin +
+                ballisticVelocity * ballisticElapsed +
+                0.5f * ballisticGravity * ballisticElapsed * ballisticElapsed;
+
+            if (ballisticElapsed >= ballisticDuration)
+            {
+                transform.position = ballisticImpactPosition;
+                lastTargetPosition = ballisticImpactPosition;
+                HitTarget();
+            }
+
+            return;
+        }
 
         if (target != null){
             lastTargetPosition = target.position;
@@ -122,6 +152,12 @@ public class Projectile : MonoBehaviour{
         attackOrigin = Vector3.zero;
         damage = 0f;
         movementSpeed = speed;
+        ballisticMovement = false;
+        ballisticElapsed = 0f;
+        ballisticDuration = 0f;
+        ballisticVelocity = Vector3.zero;
+        ballisticGravity = Vector3.zero;
+        ballisticImpactPosition = Vector3.zero;
         attackData = null;
         affectedEnemies = null;
         RestoreDefaultVisuals();
@@ -130,6 +166,66 @@ public class Projectile : MonoBehaviour{
     private void SetNextTarget(Transform nextTarget){
         target = nextTarget;
         lastTargetPosition = nextTarget.position;
+    }
+
+    private void ConfigureBallisticMovement(CannonAttackData cannonAttack)
+    {
+        ballisticMovement = true;
+        ballisticElapsed = 0f;
+
+        EnemyHealth enemyHealth =
+            target.GetComponentInParent<EnemyHealth>();
+        Vector3 targetPosition = enemyHealth != null
+            ? enemyHealth.transform.position + Vector3.up * 0.35f
+            : target.position;
+        EnemyMovement enemyMovement =
+            target.GetComponentInParent<EnemyMovement>();
+        Vector3 targetVelocity = enemyMovement != null
+            ? enemyMovement.Velocity
+            : Vector3.zero;
+        targetVelocity.y = 0f;
+
+        float gravityMagnitude = cannonAttack.Gravity;
+        ballisticDuration = Mathf.Max(
+            Mathf.Sqrt(8f * cannonAttack.ArcHeight / gravityMagnitude)
+        );
+
+        for (int iteration = 0; iteration < 2; iteration++)
+        {
+            targetPosition = enemyHealth != null
+                ? enemyHealth.transform.position + Vector3.up * 0.35f
+                : target.position;
+            targetPosition += targetVelocity * ballisticDuration;
+
+            float horizontalDistance = Vector3.Distance(
+                new Vector3(attackOrigin.x, 0f, attackOrigin.z),
+                new Vector3(targetPosition.x, 0f, targetPosition.z)
+            );
+
+            ballisticDuration = Mathf.Max(
+                horizontalDistance / movementSpeed,
+                Mathf.Sqrt(8f * cannonAttack.ArcHeight / gravityMagnitude)
+            );
+        }
+
+        ballisticImpactPosition = targetPosition;
+        lastTargetPosition = targetPosition;
+
+        Vector3 displacement = targetPosition - attackOrigin;
+        Vector3 horizontalDisplacement = new Vector3(
+            displacement.x,
+            0f,
+            displacement.z
+        );
+        Vector3 horizontalVelocity = horizontalDisplacement / ballisticDuration;
+        float verticalVelocity = (
+            displacement.y + 0.5f * gravityMagnitude *
+            ballisticDuration * ballisticDuration
+        ) / ballisticDuration;
+
+        ballisticVelocity = horizontalVelocity +
+            Vector3.up * verticalVelocity;
+        ballisticGravity = Vector3.down * gravityMagnitude;
     }
 
     private void ConfigureVisuals(){

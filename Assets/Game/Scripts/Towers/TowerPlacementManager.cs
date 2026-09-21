@@ -356,7 +356,9 @@ public class TowerPlacementManager : MonoBehaviour{
     }
 
     private static void PlayPlacementFeedback(GameObject placedTower){
-        MMF_Player feedbacks = placedTower.AddComponent<MMF_Player>();
+        GameObject feedbackObject = new GameObject("Placement Feedbacks");
+        feedbackObject.transform.SetParent(placedTower.transform, false);
+        MMF_Player feedbacks = feedbackObject.AddComponent<MMF_Player>();
         MMF_Position rise = new MMF_Position{
             Mode = MMF_Position.Modes.AtoB,
             Space = MMF_Position.Spaces.World,

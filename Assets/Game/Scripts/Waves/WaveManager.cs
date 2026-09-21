@@ -14,6 +14,10 @@ public class WaveManager : MonoBehaviour{
 
     private int currentWaveIndex;
     private int enemiesAlive;
+    private int currentWaveEnemyCount;
+    private int currentWaveEnemiesRemoved;
+    private int completedWaveCount;
+    private bool waveActive;
 
     private float nextWaveTimer;
 
@@ -23,10 +27,19 @@ public class WaveManager : MonoBehaviour{
 
     public int CurrentWaveNumber => Mathf.Min(
         currentWaveIndex + 1,
-        waves.Length
+        TotalWaveCount
     );
 
     public float NextWaveTimer => nextWaveTimer;
+
+    public int TotalWaveCount => waves != null ? waves.Length : 0;
+    public int CompletedWaveCount => completedWaveCount;
+    public bool WaveActive => waveActive;
+    public float CurrentWaveProgress => currentWaveEnemyCount > 0
+        ? Mathf.Clamp01(
+            (float)currentWaveEnemiesRemoved / currentWaveEnemyCount
+        )
+        : 0f;
 
     public bool WaitingForFirstWave => waitingForFirstWave;
     public bool WaitingForNextWave => waitingForNextWave;
@@ -87,6 +100,9 @@ public class WaveManager : MonoBehaviour{
             currentWaveIndex < waves.Length;
             currentWaveIndex++
         ){
+            currentWaveEnemyCount = waves[currentWaveIndex].EnemyCount;
+            currentWaveEnemiesRemoved = 0;
+            waveActive = true;
             Debug.Log($"Starting Wave {CurrentWaveNumber}");
             WaveStarted?.Invoke(CurrentWaveNumber);
 
@@ -98,8 +114,12 @@ public class WaveManager : MonoBehaviour{
                 yield return null;
             }
 
+            currentWaveEnemiesRemoved = currentWaveEnemyCount;
+            completedWaveCount = currentWaveIndex + 1;
+            waveActive = false;
             Debug.Log($"Wave {CurrentWaveNumber} completed.");
-            TowerAttackAudio.StopAll();
+            // One-shot audio owns its short lifetime and fade, including the
+            // final impact. Ending the wave must not cut that tail off.
 
             if (currentWaveIndex < waves.Length - 1){
                 yield return StartCoroutine(WaitForNextWave());
@@ -186,5 +206,9 @@ public class WaveManager : MonoBehaviour{
 
     private void EnemyRemoved(){
         enemiesAlive = Mathf.Max(0, enemiesAlive - 1);
+        currentWaveEnemiesRemoved = Mathf.Min(
+            currentWaveEnemyCount,
+            currentWaveEnemiesRemoved + 1
+        );
     }
 }

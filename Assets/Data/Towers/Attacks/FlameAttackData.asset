@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FlameAttackData
   projectileSpeed: 50
   shotSound: {fileID: 8300000, guid: 8ef045e18b7742469375cf9ba257a05e, type: 3}
-  shotVolume: 0.24
+  shotVolume: 0.867
   impactSound: {fileID: 0}
   impactVolume: 0.18
-  coneRange: 6
+  coneRange: 7.5
   coneAngle: 55
   enemyLayer:
     serializedVersion: 2

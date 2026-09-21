@@ -16,6 +16,8 @@ public class EnemyMovement : MonoBehaviour{
     private bool reachedDestination;
     private float speedMultiplier = 1f;
 
+    public Vector3 Velocity => agent != null ? agent.velocity : Vector3.zero;
+
 private void Awake(){
     agent = GetComponent<NavMeshAgent>();
 

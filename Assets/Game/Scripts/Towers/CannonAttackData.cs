@@ -7,9 +7,14 @@ using UnityEngine;
 )]
 public class CannonAttackData : TowerAttackData
 {
+    [SerializeField, Min(0f)] private float arcHeight = 2.5f;
+    [SerializeField, Min(0.1f)] private float gravity = 20f;
     [SerializeField] private float splashDamage = 3.5f;
     [SerializeField] private float splashRadius = 2f;
     [SerializeField] private LayerMask enemyLayer = 1 << 7;
+
+    public float ArcHeight => arcHeight;
+    public float Gravity => gravity;
 
     public override bool ApplyImpact(
         Vector3 attackOrigin,

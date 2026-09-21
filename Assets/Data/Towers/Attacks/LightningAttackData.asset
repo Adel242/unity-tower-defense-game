@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5d203c55c695ae4da6e789914758b3a, type: 3}
   m_Name: LightningAttackData
   m_EditorClassIdentifier: Assembly-CSharp::LightningAttackData
-  projectileSpeed: 40
+  projectileSpeed: 60
   shotSound: {fileID: 8300000, guid: f51ee405daba49b59cf68a0bd5ec3bc0, type: 3}
-  shotVolume: 0.26
+  shotVolume: 0.352
   impactSound: {fileID: 0}
-  impactVolume: 0.2
+  impactVolume: 0.187
   maxBounces: 3
-  bounceRange: 4
+  bounceRange: 3
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128

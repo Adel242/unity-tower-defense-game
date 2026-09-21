@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01bb1e74f0d54ce486ee44ef028c661c, type: 3}
   m_Name: ArcaneAttackData
   m_EditorClassIdentifier: Assembly-CSharp::ArcaneAttackData
-  projectileSpeed: 18
+  projectileSpeed: 20
   shotSound: {fileID: 8300000, guid: c3a09b408f394eea8d5e53ac09d4af0f, type: 3}
-  shotVolume: 0.3
+  shotVolume: 0.179
   impactSound: {fileID: 0}
   impactVolume: 0.26

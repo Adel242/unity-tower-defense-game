@@ -30,6 +30,78 @@ public static class TowerAttackVfx
     private const string ParticleShader =
         "Universal Render Pipeline/Particles/Unlit";
 
+    public static void PlayCannonMuzzleFlash(
+        Vector3 position,
+        Vector3 direction
+    )
+    {
+        GameObject effectObject = new GameObject("Cannon Muzzle Flash VFX");
+        effectObject.SetActive(false);
+        effectObject.transform.SetPositionAndRotation(
+            position,
+            Quaternion.LookRotation(direction.normalized, Vector3.up)
+        );
+
+        ParticleSystem particles = effectObject.AddComponent<ParticleSystem>();
+        ParticleSystem.MainModule main = particles.main;
+        main.duration = 0.18f;
+        main.loop = false;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.08f, 0.18f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(2f, 5f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.28f);
+        main.startColor = new ParticleSystem.MinMaxGradient(
+            new Color(1f, 0.35f, 0.03f, 1f),
+            new Color(1f, 0.9f, 0.25f, 1f)
+        );
+        main.maxParticles = 14;
+        main.stopAction = ParticleSystemStopAction.Destroy;
+
+        ParticleSystem.EmissionModule emission = particles.emission;
+        emission.rateOverTime = 0f;
+        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 10) });
+
+        ParticleSystem.ShapeModule shape = particles.shape;
+        shape.shapeType = ParticleSystemShapeType.Cone;
+        shape.angle = 18f;
+        shape.radius = 0.08f;
+
+        ParticleSystemRenderer renderer =
+            effectObject.GetComponent<ParticleSystemRenderer>();
+        Material effectMaterial = CreateMaterial(ParticleShader, Color.white);
+        renderer.material = effectMaterial;
+        Object.Destroy(effectMaterial, 1f);
+
+        effectObject.SetActive(true);
+        particles.Play();
+    }
+
+    public static void PlayLightningMuzzleFlash(
+        Vector3 position,
+        Vector3 direction
+    )
+    {
+        Vector3 forward = direction.normalized;
+        Vector3 side = Vector3.Cross(Vector3.up, forward).normalized;
+
+        if (side.sqrMagnitude < 0.001f)
+        {
+            side = Vector3.right;
+        }
+
+        PlayLightningArc(
+            position,
+            position + forward * 0.72f + side * 0.16f + Vector3.up * 0.08f
+        );
+        PlayLightningArc(
+            position,
+            position + forward * 0.58f - side * 0.14f + Vector3.down * 0.06f
+        );
+        PlayLightningArc(
+            position,
+            position + forward * 0.45f + side * 0.05f
+        );
+    }
+
     public static void PlayCannonExplosion(Vector3 position, float radius)
     {
         GameObject effectObject = new GameObject("Cannon Explosion VFX");
@@ -40,14 +112,14 @@ public static class TowerAttackVfx
         ParticleSystem.MainModule main = particles.main;
         main.duration = 0.35f;
         main.loop = false;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(0.25f, 0.5f);
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.6f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(radius * 1.5f, radius * 2.8f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.32f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.2f, 0.5f);
         main.startColor = new ParticleSystem.MinMaxGradient(
             new Color(1f, 0.25f, 0.02f, 1f),
             new Color(1f, 0.85f, 0.1f, 1f)
         );
-        main.maxParticles = 12;
+        main.maxParticles = 18;
         main.stopAction = ParticleSystemStopAction.Destroy;
 
         ParticleSystem.EmissionModule emission = particles.emission;
@@ -292,7 +364,8 @@ public static class TowerAttackAudio
                 volume,
                 MaximumPlacementDuration,
                 0f,
-                0f
+                0f,
+                true
             );
         }
     }
@@ -319,7 +392,8 @@ public static class TowerAttackAudio
         float volume,
         float maximumDuration,
         float minimumInterval,
-        float spatialBlend
+        float spatialBlend,
+        bool isPlacement = false
     )
     {
         ActiveSounds.RemoveAll(soundObject => soundObject == null);
@@ -336,23 +410,21 @@ public static class TowerAttackAudio
             return;
         }
 
-        LastPlayTimeByClip[clipId] = currentTime;
-
-        if (ActiveSounds.Count >= MaximumSimultaneousSounds)
+        // Reserve one voice for building. Dropping an excess attack is less
+        // disruptive than cutting off a sound that is already audible.
+        int voiceLimit = isPlacement ? MaximumSimultaneousSounds : MaximumSimultaneousSounds - 1;
+        if (ActiveSounds.Count >= voiceLimit)
         {
-            GameObject oldestSound = ActiveSounds[0];
-            ActiveSounds.RemoveAt(0);
-
-            if (oldestSound != null)
-            {
-                UnityEngine.Object.Destroy(oldestSound);
-            }
+            return;
         }
 
+        LastPlayTimeByClip[clipId] = currentTime;
         GameObject soundObject = new GameObject($"SFX - {clip.name}");
         soundObject.transform.position = position;
 
         AudioSource source = soundObject.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.loop = false;
         source.clip = clip;
         source.volume = volume;
         source.spatialBlend = spatialBlend;
@@ -362,10 +434,7 @@ public static class TowerAttackAudio
         source.Play();
 
         ActiveSounds.Add(soundObject);
-        UnityEngine.Object.Destroy(
-            soundObject,
-            Mathf.Min(clip.length, maximumDuration)
-        );
+        soundObject.AddComponent<TowerSoundEnvelope>().Initialize(source, maximumDuration);
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -373,5 +442,47 @@ public static class TowerAttackAudio
     {
         ActiveSounds.Clear();
         LastPlayTimeByClip.Clear();
+    }
+}
+
+internal sealed class TowerSoundEnvelope : MonoBehaviour
+{
+    private AudioSource source;
+    private double endTime;
+    private float fadeDuration;
+    private float initialVolume;
+
+    public void Initialize(AudioSource audioSource, float maximumDuration)
+    {
+        source = audioSource;
+        initialVolume = source.volume;
+        float duration = Mathf.Min(source.clip.length, maximumDuration);
+        endTime = AudioSettings.dspTime + duration;
+        // Only trim long clips; short, authored one-shots keep their natural tail.
+        fadeDuration = source.clip.length > maximumDuration
+            ? Mathf.Min(0.22f, duration * 0.35f) : 0f;
+    }
+
+    private void Update()
+    {
+        if (source == null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        // DSP time follows audio (including listener pause), not gameplay timeScale.
+        float remaining = (float)(endTime - AudioSettings.dspTime);
+        if (remaining <= 0f)
+        {
+            source.Stop();
+            Destroy(gameObject);
+            return;
+        }
+
+        if (fadeDuration > 0f && remaining < fadeDuration)
+        {
+            source.volume = initialVolume * Mathf.SmoothStep(0f, 1f, remaining / fadeDuration);
+        }
     }
 }
