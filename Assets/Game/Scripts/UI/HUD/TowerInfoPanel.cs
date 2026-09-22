@@ -16,6 +16,8 @@ public class TowerInfoPanel : MonoBehaviour{
     private Coroutine reveal;
     private MMF_Player selectionFeedbacks;
     private TowerData displayedData;
+    private TowerData selectedData;
+    private TowerData previewData;
 
     private void Awake(){
         if (panelRoot == null){ return; }
@@ -36,17 +38,35 @@ public class TowerInfoPanel : MonoBehaviour{
             Timing = new MMFeedbackTiming{ TimescaleMode = TimescaleModes.Unscaled }
         });
         selectionFeedbacks.Initialization();
-        Hide();
+        HidePanel();
     }
 
 public void Show(TowerData data){
+    selectedData = data;
+    RefreshDisplay();
+}
+
+public void ShowPreview(TowerData data){
+    if (data == null){ return; }
+    previewData = data;
+    RefreshDisplay();
+}
+
+public void ClearPreview(TowerData data){
+    if (previewData != data){ return; }
+    previewData = null;
+    RefreshDisplay();
+}
+
+private void RefreshDisplay(){
+    TowerData data = previewData != null ? previewData : selectedData;
 
     if (data == null || panelRoot == null){
-        Hide();
+        HidePanel();
         return;
     }
 
-    bool changed = true;
+    bool changed = displayedData != data || !panelRoot.activeSelf;
     displayedData = data;
 
     SetText(towerNameText, $"<size=10><color=#7994AC>TORRE</color></size>\n<b>{data.towerName}</b>", 21f);
@@ -86,6 +106,12 @@ public void Show(TowerData data){
     }
 
     public void Hide(){
+        if (selectedData == null){ return; }
+        selectedData = null;
+        RefreshDisplay();
+    }
+
+    private void HidePanel(){
         if (reveal != null){ StopCoroutine(reveal); reveal = null; }
         if (panelRoot != null && panelRoot.activeSelf){
             selectionFeedbacks?.StopFeedbacks();
@@ -98,7 +124,11 @@ public void Show(TowerData data){
         displayedData = null;
     }
 
-    private void OnDisable(){ Hide(); }
+    private void OnDisable(){
+        selectedData = null;
+        previewData = null;
+        HidePanel();
+    }
 
     private static void SetText(TMP_Text label, string value, float size){
         if (label == null){ return; }

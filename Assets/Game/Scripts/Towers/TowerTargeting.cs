@@ -129,6 +129,9 @@ public class TowerTargeting : MonoBehaviour {
             return;
         }
 
+        // Cadence belongs to the tower, not to its current target. A projectile
+        // whose victim dies in flight must still consume the full cooldown.
+        fireCooldown = Mathf.Max(0f, fireCooldown - Time.deltaTime);
         UpdateTarget();
 
         if (target != null)
@@ -189,7 +192,12 @@ public class TowerTargeting : MonoBehaviour {
             {
                 target = enemyMovement.TargetPoint;
                 targetRoot = closestEnemy.transform;
-                fireCooldown = towerData.firstShotDelay;
+                // Acquiring another enemy may add the aiming delay, but must
+                // never shorten cooldown left by the previous shot.
+                fireCooldown = Mathf.Max(
+                    fireCooldown,
+                    towerData.firstShotDelay
+                );
             }
         }
     }
@@ -242,8 +250,6 @@ public class TowerTargeting : MonoBehaviour {
 
     private void HandleShooting()
     {
-        fireCooldown -= Time.deltaTime;
-
         if (fireCooldown <= 0f)
         {
             Shoot();
@@ -260,10 +266,15 @@ public class TowerTargeting : MonoBehaviour {
             return;
         }
 
+        float shotDamage = RunUpgradeState.Current.RollDamage(
+            towerData.Damage,
+            towerData.AttackData
+        );
+
         if (towerData.AttackData is FlameAttackData flame && targetRoot != null){
             // A flame pulse is an area attack, not a delayed homing projectile.
             flame.FireCone(transform.position, shotPosition,
-                targetRoot.position, towerData.Range, towerData.Damage);
+                targetRoot.position, towerData.Range, shotDamage);
             TowerAttackAudio.PlayShot(flame, shotPosition);
             return;
         }
@@ -278,7 +289,7 @@ public class TowerTargeting : MonoBehaviour {
 
         projectile.SetTarget(
             target,
-            towerData.Damage,
+            shotDamage,
             towerData.AttackData
         );
 

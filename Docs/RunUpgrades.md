@@ -8,17 +8,17 @@ Renovar cuesta 30 de oro, luego 45, 60… (+15 por uso durante toda la partida).
 
 La renovación reúne las tarjetas en el centro con giro, escala FEEL y desvanecimiento (0.48 s), seguido de entrada escalonada y pulso dorado breve (0.42 s). El botón tiene squash/rebote FEEL. No mueve la cámara ni altera el tiempo del juego; usa tiempo escalado para respetar pausa. Bloquea interacción hasta completar la secuencia. Hover con borde iluminado y elevación; confirmación con rebote/destello y salida animada de las alternativas. Pendiente comprobar visualmente en Play Mode, incluyendo doble clic, pausa durante renovación, coste persistente en la siguiente oferta y distintas resoluciones.
 
-Inicio: mensaje breve «Prepara tus defensas / Protege la base» durante 1.8 segundos, preparación libre para construir, pulsar Iniciar oleada, elegir una de tres mejoras y comienzo automático de la oleada 1. No aparecen tarjetas al entrar en la escena. Las ofertas posteriores siguen al completar 5, 10, 15, 20 y cada múltiplo de 5 futuro. El temporizador de la próxima oleada empieza después de elegir. La oferta de la 20 se mantiene aunque actualmente sea la última.
+Inicio: mensaje breve «Prepara tus defensas / Protege la base» durante 1.8 segundos, preparación libre para construir, pulsar Iniciar oleada, elegir una de tres mejoras y comienzo automático de la oleada 1. No aparecen tarjetas al entrar en la escena. Las ofertas posteriores siguen al completar cada múltiplo de 5. El temporizador de la próxima oleada empieza después de elegir.
 
-## Catálogo (25 opciones)
+## Catálogo (40 opciones)
 
-- Globales: daño +6%, cadencia +6%, alcance +5%, oro por baja +10%, descuento 5%.
-- Cada familia (básica, cañón, rayos, fuego, arcana): daño +10%, cadencia +8%, descuento 8% (15 opciones).
-- Cañón: radio de explosión +10%.
-- Fuego: alcance +8% o apertura del cono +10%.
-- Rayos: +1 rebote o distancia entre rebotes +10%.
+- Globales: daño, cadencia, alcance, oro, descuento, probabilidad crítica y daño crítico.
+- Cada familia (básica, cañón, rayos, fuego, arcana): daño, cadencia, alcance, crítico y descuento (25 opciones).
+- Cañón: radio y daño de explosión.
+- Fuego: alcance, apertura del cono, daño de quemadura y duración de quemadura.
+- Rayos: rebotes adicionales y distancia entre rebotes.
 
-Cadencia y velocidad de ataque son el mismo atributo, no dos bonificaciones distintas. Límite de 3 elecciones por mejora; rebotes, 2. Las mejoras pueden reaparecer en ofertas posteriores hasta su límite. Acumulación aditiva sobre valores base: daño global +6% y específico +10% = +16%. Descuento máximo defensivo 50%, redondeo de coste hacia arriba. Apertura máxima 150°. El oro conserva restos fraccionarios entre bajas para no perder pequeñas bonificaciones. No aumenta oro inicial ni otras fuentes.
+Cadencia y velocidad de ataque son el mismo atributo. Las mejoras numéricas admiten entre 8 y 20 acumulaciones; descuentos, 5–6; rebotes, 6. El crítico base inflige 175% de daño y puede mejorar. La quemadura pulsa cada 0,5 s y al reaplicarse renueva el efecto más fuerte, sin acumular coroutines ilimitadas. Acumulación aditiva sobre valores base. Descuento máximo defensivo 50%, redondeo de coste hacia arriba. Apertura máxima 150°. El oro conserva restos fraccionarios entre bajas para no perder pequeñas bonificaciones.
 
 Afectan torres ya construidas y nuevas. No se escriben los ScriptableObjects ni se guarda progresión entre partidas. Reiniciar/cerrar la escena de juego restablece las mejoras. La economía base no fue retocada; habrá que probar la dificultad con estos beneficios.
 
@@ -39,7 +39,7 @@ Compilación C# de Unity mediante dotnet y comprobación estática de IDs/refere
 dotnet run --project Tools/UpgradeTests/UpgradeTests.csproj
 ```
 
-El arnés compila el TowerData.cs real con sustitutos mínimos de Unity; requiere SDK .NET 10. No sustituye pruebas del motor. Comprueba 25 opciones, 500 ofertas sin duplicados, límites, daño, cadencia, familia de área, rebotes, precio, doble selección, bloqueo del clic y reinicio. La advertencia de attackData sin asignar en este arnés es esperable: allí no existe serialización de Unity.
+El arnés compila el TowerData.cs real con sustitutos mínimos de Unity; requiere SDK .NET 10. No sustituye pruebas del motor. Comprueba 40 opciones, 500 ofertas sin duplicados, límites extendidos, crítico determinista, quemadura exclusiva de fuego, daño, cadencia, familia de área, rebotes, precio, doble selección, bloqueo del clic y reinicio. La advertencia de attackData sin asignar en este arnés es esperable: allí no existe serialización de Unity.
 
 Pendiente Play Mode:
 1. Iniciar Game: mensaje de misión, luego construir sin tarjetas; pulsar Iniciar oleada abre la primera elección. Confirmarla inicia enemigos sin un segundo clic.

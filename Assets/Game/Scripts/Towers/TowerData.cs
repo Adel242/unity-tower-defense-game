@@ -56,24 +56,31 @@ public sealed class RunUpgradeState
 
     public RunUpgradeState()
     {
-        Add("Arsenal reforzado", "+6% daño de todas las torres", "damage", "all", .06f);
-        Add("Mecanismos ágiles", "+6% cadencia de todas las torres", "rate", "all", .06f);
-        Add("Vigilancia", "+5% alcance de todas las torres", "range", "all", .05f);
-        Add("Botín de caza", "+10% oro por enemigo eliminado", "gold", "all", .10f);
-        Add("Construcción eficiente", "−5% coste de todas las torres", "discount", "all", .05f);
+        Add("Arsenal reforzado", "+6% daño de todas las torres", "damage", "all", .06f, 20);
+        Add("Mecanismos ágiles", "+6% cadencia de todas las torres", "rate", "all", .06f, 20);
+        Add("Vigilancia", "+5% alcance de todas las torres", "range", "all", .05f, 20);
+        Add("Botín de caza", "+10% oro por enemigo eliminado", "gold", "all", .10f, 15);
+        Add("Construcción eficiente", "−5% coste de todas las torres", "discount", "all", .05f, 6);
+        Add("Presagio certero", "+4% probabilidad de golpe crítico", "crit_chance", "all", .04f, 10);
+        Add("Golpe despiadado", "+20% daño de los golpes críticos", "crit_damage", "all", .20f, 8);
         string[] families = { "basic", "cannon", "lightning", "flame", "arcane" };
         string[] names = { "Básica", "Cañón", "Rayos", "Fuego", "Arcana" };
         for (int i = 0; i < families.Length; i++)
         {
-            Add(names[i] + ": potencia", "+10% daño de " + names[i], "damage", families[i], .10f);
-            Add(names[i] + ": ritmo", "+8% cadencia de " + names[i], "rate", families[i], .08f);
-            Add(names[i] + ": planos", "−8% coste de " + names[i], "discount", families[i], .08f);
+            Add(names[i] + ": potencia", "+10% daño de " + names[i], "damage", families[i], .10f, 15);
+            Add(names[i] + ": ritmo", "+8% cadencia de " + names[i], "rate", families[i], .08f, 15);
+            Add(names[i] + ": dominio", "+7% alcance de " + names[i], "range", families[i], .07f, 10);
+            Add(names[i] + ": precisión", "+5% crítico de " + names[i], "crit_chance", families[i], .05f, 8);
+            Add(names[i] + ": planos", "−8% coste de " + names[i], "discount", families[i], .08f, 5);
         }
-        Add("Onda expansiva", "+10% radio de explosión del cañón", "area", "cannon", .10f);
-        Add("Lenguas de fuego", "+8% alcance de fuego (detección y daño)", "range", "flame", .08f);
-        Add("Abanico ardiente", "+10% apertura del cono de fuego", "area", "flame", .10f);
-        Add("Arco adicional", "+1 rebote de rayos", "bounces", "lightning", 1f, 2);
-        Add("Conducción", "+10% distancia entre rebotes", "chain", "lightning", .10f);
+        Add("Onda expansiva", "+10% radio de explosión del cañón", "area", "cannon", .10f, 10);
+        Add("Metralla maldita", "+12% daño de la explosión del cañón", "splash", "cannon", .12f, 12);
+        Add("Lenguas de fuego", "+8% alcance de fuego (detección y daño)", "range", "flame", .08f, 10);
+        Add("Abanico ardiente", "+10% apertura del cono de fuego", "area", "flame", .10f, 10);
+        Add("Brasas persistentes", "Quema por 20% del daño por segundo", "burn", "flame", .20f, 15);
+        Add("Fuego inextinguible", "+0,75 s de duración de quemadura", "burn_duration", "flame", .75f, 8);
+        Add("Arco adicional", "+1 rebote de rayos", "bounces", "lightning", 1f, 6);
+        Add("Conducción", "+10% distancia entre rebotes", "chain", "lightning", .10f, 10);
     }
 
     private void Add(string title, string description, string stat, string family, float amount, int limit = 3)
@@ -129,6 +136,18 @@ public sealed class RunUpgradeState
     }
 
     public float Multiplier(string stat, TowerAttackData attack) => 1f + Bonus(stat, attack);
+    public float RollDamage(float damage, TowerAttackData attack)
+    {
+        return ResolveDamage(damage, attack, Random.value);
+    }
+
+    public float ResolveDamage(float damage, TowerAttackData attack, float roll)
+    {
+        float criticalChance = Mathf.Min(0.75f, Mathf.Clamp01(Bonus("crit_chance", attack)));
+        if (roll >= criticalChance) return damage;
+        return damage * (1.75f + Bonus("crit_damage", attack));
+    }
+
     public float Bonus(string stat, TowerAttackData attack = null)
     {
         string family = attack is CannonAttackData ? "cannon" : attack is LightningAttackData ? "lightning" :

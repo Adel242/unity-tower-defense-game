@@ -17,3 +17,6 @@ MonoBehaviour:
   shotVolume: 0.179
   impactSound: {fileID: 0}
   impactVolume: 0.26
+  impactVfxPrefab: {fileID: 6836078321801532374, guid: 11ff0a90d8cbe9241b821681fc41adeb, type: 3}
+  impactVfxLifetime: 2.5
+  impactVfxScale: 0.7

@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,
     ISelectHandler, IDeselectHandler{
@@ -17,24 +18,40 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private bool focused;
     private Vector3 restingScale;
     private RunUpgradeState upgrades;
+    private TowerInfoPanel infoPanel;
+    private TowerData towerData;
+    private int shortcutNumber;
 
     private void Awake(){
         restingScale = transform.localScale;
+        shortcutNumber = transform.GetSiblingIndex() + 1;
     }
 
     private void Update(){
+        if (IsShortcutPressed()){
+            StartBuildMode();
+        }
+
         bool highlighted = button != null && button.interactable && (hovered || focused);
         Vector3 targetScale = restingScale * (highlighted ? 1.035f : 1f);
         transform.localScale = Vector3.Lerp(transform.localScale, targetScale,
             1f - Mathf.Exp(-18f * Time.unscaledDeltaTime));
     }
 
-    public void OnPointerEnter(PointerEventData eventData){ hovered = true; }
-    public void OnPointerExit(PointerEventData eventData){ hovered = false; }
+    public void OnPointerEnter(PointerEventData eventData){
+        hovered = true;
+        if (infoPanel == null){ infoPanel = FindFirstObjectByType<TowerInfoPanel>(); }
+        infoPanel?.ShowPreview(towerData);
+    }
+    public void OnPointerExit(PointerEventData eventData){
+        hovered = false;
+        infoPanel?.ClearPreview(towerData);
+    }
     public void OnSelect(BaseEventData eventData){ focused = true; }
     public void OnDeselect(BaseEventData eventData){ focused = false; }
 
     private void OnDisable(){
+        infoPanel?.ClearPreview(towerData);
         hovered = focused = false;
         transform.localScale = restingScale;
     }
@@ -52,6 +69,7 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
 
         playerGold = FindFirstObjectByType<PlayerGold>();
+        infoPanel = FindFirstObjectByType<TowerInfoPanel>();
         button = GetComponent<Button>();
 
         UpdateVisuals();
@@ -96,13 +114,15 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
         }
 
-        towerCost = targeting.TowerData.Cost;
+        towerData = targeting.TowerData;
+        towerCost = towerData.Cost;
 
         label = GetComponentInChildren<TMP_Text>();
 
         if (label != null){
-            TowerData data = targeting.TowerData;
+            TowerData data = towerData;
             label.text =
+                $"<color=#69D7F0><b>[{shortcutNumber}]</b></color> " +
                 $"<b>{data.towerName}</b>\n" +
                 $"<color=#F5CA70>{data.Cost} G</color>";
             label.alignment = TextAlignmentOptions.Center;
@@ -153,5 +173,21 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private void OnUpgradeChanged(){
         UpdateVisuals();
         if (playerGold != null) UpdateAffordability(playerGold.CurrentGold);
+    }
+
+    private bool IsShortcutPressed(){
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null || shortcutNumber < 1 || shortcutNumber > 5){
+            return false;
+        }
+
+        return shortcutNumber switch{
+            1 => keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame,
+            2 => keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame,
+            3 => keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame,
+            4 => keyboard.digit4Key.wasPressedThisFrame || keyboard.numpad4Key.wasPressedThisFrame,
+            5 => keyboard.digit5Key.wasPressedThisFrame || keyboard.numpad5Key.wasPressedThisFrame,
+            _ => false
+        };
     }
 }

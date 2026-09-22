@@ -8,8 +8,17 @@ public class EnemySpawner : MonoBehaviour{
     [SerializeField] private float minimumSpawnDistance = 0.7f;
     public event System.Action<GameObject> EnemySpawned;
 
-    public IEnumerator SpawnWave(WaveData waveData){
-        for (int i = 0; i < waveData.EnemyCount; i++){
+    public IEnumerator SpawnWave(
+        GameObject enemyPrefab,
+        int enemyCount,
+        float timeBetweenEnemies,
+        float healthMultiplier,
+        float speedMultiplier,
+        float goldRewardMultiplier
+    ){
+        if (enemyPrefab == null){ yield break; }
+
+        for (int i = 0; i < enemyCount; i++){
             Vector3 spawnPosition;
 
             while (!TryGetRandomSpawnPosition(out spawnPosition)){
@@ -17,7 +26,7 @@ public class EnemySpawner : MonoBehaviour{
             }
 
             GameObject enemy = Instantiate(
-                waveData.EnemyPrefab,
+                enemyPrefab,
                 spawnPosition,
                 Quaternion.identity
             );
@@ -26,10 +35,10 @@ public class EnemySpawner : MonoBehaviour{
             EnemyHealth health = enemy.GetComponent<EnemyHealth>();
 
             health?.ApplyWaveScaling(
-                waveData.HealthMultiplier,
-                waveData.GoldRewardMultiplier
+                healthMultiplier,
+                goldRewardMultiplier
             );
-            movement?.ApplyWaveSpeed(waveData.SpeedMultiplier);
+            movement?.ApplyWaveSpeed(speedMultiplier);
 
             EnemySpawned?.Invoke(enemy);
 
@@ -37,7 +46,9 @@ public class EnemySpawner : MonoBehaviour{
                 movement.SetDestination(destinationPoint);
             }
 
-            yield return new WaitForSeconds(waveData.TimeBetweenEnemies);
+            if (i < enemyCount - 1){
+                yield return new WaitForSeconds(timeBetweenEnemies);
+            }
         }
     }
 

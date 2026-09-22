@@ -1,18 +1,24 @@
 using System;
 using System.Collections;
-using System.Linq;
 using UnityEngine;
 using MoreMountains.Feedbacks;
 using MoreMountains.Tools;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 public class WaveManager : MonoBehaviour{
-    [SerializeField] private WaveData[] waves;
     [SerializeField] private EnemySpawner enemySpawner;
     [SerializeField] private float timeBetweenWaves = 10f;
+    [Header("Infinite waves")]
+    [SerializeField] private GameObject enemyPrefab;
+    [SerializeField, Min(1)] private int baseEnemyCount = 15;
+    [SerializeField, Min(0f)] private float enemiesAddedPerWave = 2.25f;
+    [SerializeField, Min(0.01f)] private float initialSpawnInterval = 1.12f;
+    [SerializeField, Min(0.01f)] private float minimumSpawnInterval = 0.14f;
+    [SerializeField, Range(0.8f, 1f)] private float spawnIntervalDecay = 0.965f;
+    [SerializeField, Min(0.1f)] private float initialHealthMultiplier = 0.6f;
+    [SerializeField, Min(1f)] private float healthGrowthPerWave = 1.115f;
+    [SerializeField, Min(1f)] private float maximumHealthMultiplier = 1000000f;
+    [SerializeField, Min(0f)] private float speedAddedPerWave = 0.015f;
+    [SerializeField, Min(0.1f)] private float maximumSpeedMultiplier = 1.9f;
     [Header("Run upgrades")]
     [SerializeField, Min(0f)] private float missionIntroDelay = 1.2f;
     [SerializeField] private GameObject upgradePanel;
@@ -151,6 +157,7 @@ public class WaveManager : MonoBehaviour{
                 choice.Family == "lightning" ? "RAYOS" : choice.Family == "arcane" ? "ARCANA" : "BÁSICA";
             if (choice.Stat == "gold") family = "ECONOMÍA";
             string amount = choice.Stat == "bounces" ? "+1" :
+                choice.Stat == "burn_duration" ? $"+{choice.Amount:0.##} s" :
                 (choice.Stat == "discount" ? "−" : "+") + Mathf.RoundToInt(choice.Amount * 100f) + "%";
             upgradeLabels[i].text = $"<size=12><color=#ACA492>{family}</color></size>\n" +
                 $"<size=23><color=#{color}><b>{choice.Title}</b></color></size>\n\n" +
@@ -418,14 +425,12 @@ public class WaveManager : MonoBehaviour{
     private bool waitingForNextWave;
     private bool skipWait;
 
-    public int CurrentWaveNumber => Mathf.Min(
-        currentWaveIndex + 1,
-        TotalWaveCount
-    );
+    public int CurrentWaveNumber => currentWaveIndex + 1;
 
     public float NextWaveTimer => nextWaveTimer;
 
-    public int TotalWaveCount => waves != null ? waves.Length : 0;
+    // The progress rail only needs an upper bound to keep five future slots visible.
+    public int TotalWaveCount => int.MaxValue;
     public int CompletedWaveCount => completedWaveCount;
     public bool WaveActive => waveActive;
     public float CurrentWaveProgress => currentWaveEnemyCount > 0
@@ -439,22 +444,6 @@ public class WaveManager : MonoBehaviour{
     public bool GameplayReady => gameplayReady;
 
     public event Action<int> WaveStarted;
-
-#if UNITY_EDITOR
-    private void OnValidate(){
-        string[] guids = AssetDatabase.FindAssets(
-            "t:WaveData",
-            new[] { "Assets/Data/Waves" }
-        );
-
-        waves = guids
-            .Select(AssetDatabase.GUIDToAssetPath)
-            .Select(AssetDatabase.LoadAssetAtPath<WaveData>)
-            .Where(wave => wave != null)
-            .OrderBy(wave => wave.name)
-            .ToArray();
-    }
-#endif
 
     private void OnEnable(){
         if (enemySpawner != null){
@@ -471,8 +460,8 @@ public class WaveManager : MonoBehaviour{
     private void Start(){
         upgradeGold = FindFirstObjectByType<PlayerGold>();
         if (upgradeGold != null) upgradeGold.GoldChanged += OnUpgradeGoldChanged;
-        if (waves == null || waves.Length == 0){
-            Debug.LogWarning("No waves configured.");
+        if (enemyPrefab == null){
+            Debug.LogWarning("No enemy prefab is configured for infinite waves.");
             return;
         }
 
@@ -495,19 +484,23 @@ public class WaveManager : MonoBehaviour{
         }
         yield return OfferUpgrades(1);
 
-        for (
-            currentWaveIndex = 0;
-            currentWaveIndex < waves.Length;
-            currentWaveIndex++
-        ){
-            currentWaveEnemyCount = waves[currentWaveIndex].EnemyCount;
+        for (currentWaveIndex = 0; ; currentWaveIndex++){
+            InfiniteWave wave = GenerateWave(CurrentWaveNumber);
+            currentWaveEnemyCount = wave.EnemyCount;
             currentWaveEnemiesRemoved = 0;
             waveActive = true;
             Debug.Log($"Starting Wave {CurrentWaveNumber}");
             WaveStarted?.Invoke(CurrentWaveNumber);
 
             yield return StartCoroutine(
-                enemySpawner.SpawnWave(waves[currentWaveIndex])
+                enemySpawner.SpawnWave(
+                    enemyPrefab,
+                    wave.EnemyCount,
+                    wave.SpawnInterval,
+                    wave.HealthMultiplier,
+                    wave.SpeedMultiplier,
+                    wave.GoldRewardMultiplier
+                )
             );
 
             while (enemiesAlive > 0){
@@ -522,12 +515,56 @@ public class WaveManager : MonoBehaviour{
             // One-shot audio owns its short lifetime and fade, including the
             // final impact. Ending the wave must not cut that tail off.
 
-            if (currentWaveIndex < waves.Length - 1){
-                yield return StartCoroutine(WaitForNextWave());
-            }
+            yield return StartCoroutine(WaitForNextWave());
         }
+    }
 
-        Debug.Log("All waves completed.");
+    private InfiniteWave GenerateWave(int waveNumber){
+        int step = Mathf.Max(0, waveNumber - 1);
+        bool specialWave = waveNumber % 5 == 0;
+        bool swarmWave = !specialWave && waveNumber % 3 == 0;
+        bool fastWave = !specialWave && waveNumber % 4 == 0;
+
+        int enemyCount = Mathf.RoundToInt(baseEnemyCount + step * enemiesAddedPerWave);
+        if (swarmWave){ enemyCount += Mathf.CeilToInt(waveNumber * 0.35f); }
+        if (specialWave){ enemyCount = Mathf.RoundToInt(enemyCount * 0.82f); }
+        enemyCount = Mathf.Clamp(enemyCount, 1, 250);
+
+        float health = initialHealthMultiplier * Mathf.Pow(healthGrowthPerWave, step);
+        if (specialWave){ health *= 1.45f; }
+        health = Mathf.Clamp(health, 0.1f, maximumHealthMultiplier);
+
+        float speed = 1f + step * speedAddedPerWave;
+        if (fastWave){ speed *= 1.12f; }
+        if (specialWave){ speed *= 0.92f; }
+        speed = Mathf.Clamp(speed, 0.75f, maximumSpeedMultiplier);
+
+        float interval = initialSpawnInterval * Mathf.Pow(spawnIntervalDecay, step);
+        if (swarmWave){ interval *= 0.9f; }
+        if (specialWave){ interval *= 1.18f; }
+        interval = Mathf.Max(minimumSpawnInterval, interval);
+
+        float reward = 1f + Mathf.Floor(step / 5f) * 0.1f;
+        if (specialWave){ reward *= 1.35f; }
+        reward = Mathf.Min(4f, reward);
+
+        return new InfiniteWave(enemyCount, interval, health, speed, reward);
+    }
+
+    private readonly struct InfiniteWave{
+        public readonly int EnemyCount;
+        public readonly float SpawnInterval;
+        public readonly float HealthMultiplier;
+        public readonly float SpeedMultiplier;
+        public readonly float GoldRewardMultiplier;
+
+        public InfiniteWave(int count, float interval, float health, float speed, float reward){
+            EnemyCount = count;
+            SpawnInterval = interval;
+            HealthMultiplier = health;
+            SpeedMultiplier = speed;
+            GoldRewardMultiplier = reward;
+        }
     }
 
     private IEnumerator WaitForNextWave(){

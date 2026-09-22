@@ -30,6 +30,30 @@ public static class TowerAttackVfx
     private const string ParticleShader =
         "Universal Render Pipeline/Particles/Unlit";
 
+    public static void PlayPrefab(
+        GameObject prefab,
+        Vector3 position,
+        Quaternion rotation,
+        float uniformScale,
+        float lifetime
+    )
+    {
+        if (prefab == null || !IsFinite(position))
+        {
+            return;
+        }
+
+        GameObject effectObject = Object.Instantiate(prefab, position, rotation);
+        effectObject.name = $"{prefab.name} (Runtime)";
+        effectObject.transform.localScale *= Mathf.Max(0.01f, uniformScale);
+        Object.Destroy(effectObject, Mathf.Max(0.1f, lifetime));
+    }
+
+    private static bool IsFinite(Vector3 value) =>
+        float.IsFinite(value.x) &&
+        float.IsFinite(value.y) &&
+        float.IsFinite(value.z);
+
     public static void PlayCannonMuzzleFlash(
         Vector3 position,
         Vector3 direction

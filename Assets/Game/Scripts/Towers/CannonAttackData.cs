@@ -60,7 +60,12 @@ public class CannonAttackData : TowerAttackData
                 continue;
             }
 
-            enemyHealth.TakeDamage(splashDamage * RunUpgradeState.Current.Multiplier("damage", this));
+            float effectiveSplash = splashDamage *
+                RunUpgradeState.Current.Multiplier("damage", this) *
+                RunUpgradeState.Current.Multiplier("splash", this);
+            enemyHealth.TakeDamage(
+                RunUpgradeState.Current.RollDamage(effectiveSplash, this)
+            );
         }
 
         TowerAttackVfx.PlayCannonExplosion(

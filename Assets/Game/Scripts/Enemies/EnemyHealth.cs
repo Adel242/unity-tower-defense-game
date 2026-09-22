@@ -19,6 +19,10 @@ public class EnemyHealth : MonoBehaviour{
     private float displayedHealthFill = 1f;
     private float displayedTrailFill = 1f;
     private bool healthBarInitialized;
+    private float burnDamagePerSecond;
+    private float burnRemaining;
+    private float burnTickTimer;
+    private const float BurnTickInterval = 0.5f;
 
     private void Awake(){
         if (enemyData == null){
@@ -43,6 +47,8 @@ public class EnemyHealth : MonoBehaviour{
     }
 
     private void Update(){
+        UpdateBurn();
+
         if (!healthBarInitialized){
             return;
         }
@@ -103,6 +109,30 @@ public class EnemyHealth : MonoBehaviour{
         UpdateHealthBar();
     }
 
+    public void ApplyBurn(float damagePerSecond, float duration){
+        if (currentHealth <= 0f || damagePerSecond <= 0f || duration <= 0f){
+            return;
+        }
+
+        // Reapplying fire refreshes the strongest burn instead of producing
+        // an unbounded stack of coroutines on enemies inside the cone.
+        burnDamagePerSecond = Mathf.Max(burnDamagePerSecond, damagePerSecond);
+        burnRemaining = Mathf.Max(burnRemaining, duration);
+        if (burnTickTimer <= 0f){ burnTickTimer = BurnTickInterval; }
+    }
+
+    private void UpdateBurn(){
+        if (burnRemaining <= 0f || currentHealth <= 0f){ return; }
+
+        burnRemaining = Mathf.Max(0f, burnRemaining - Time.deltaTime);
+        burnTickTimer -= Time.deltaTime;
+        if (burnTickTimer > 0f){ return; }
+
+        burnTickTimer += BurnTickInterval;
+        TakeDamage(burnDamagePerSecond * BurnTickInterval);
+        if (burnRemaining <= 0f){ burnDamagePerSecond = 0f; }
+    }
+
     private void UpdateHealthBar(){
         if (healthFill == null || enemyData == null){
             return;
@@ -146,7 +176,12 @@ public class EnemyHealth : MonoBehaviour{
             playerGold.AddEnemyReward(goldReward);
         }
 
-        EnemyDeathVfx.Play(transform.position);
+        if (!TowerDestructionEffect.PlayEnemyDeath(
+                gameObject,
+                transform.position
+            )){
+            EnemyDeathVfx.Play(transform.position);
+        }
         Died?.Invoke(this);
         Destroy(gameObject);
     }

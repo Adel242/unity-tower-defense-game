@@ -37,7 +37,7 @@ static class Program
                 throw new Exception("Duplicate or missing cards");
             foreach (var c in draw) seen.Add(c.Title);
         }
-        Check(seen.Count == 25, "25 choices, 500 offers without duplicate cards");
+        Check(seen.Count == 40, "40 choices, 500 offers without duplicate cards");
         var data = new TowerData { damage = 10, fireRate = 2, range = 6, cost = 100 };
         var damage = Find(state, "Arsenal reforzado");
         state.Apply(damage);
@@ -47,8 +47,8 @@ static class Program
         Check(damage.Stacks == 1 && Math.Abs(data.Damage - 10.6f) < .001f,
             "Exactly one choice per draft; effective damage");
         Check(data.damage == 10 && data.cost == 100, "Base asset values unchanged");
-        Pick(state, damage); Pick(state, damage); Pick(state, damage);
-        Check(damage.Stacks == 3, "Stack limit enforced");
+        for (int i = 0; i < damage.Limit + 2; i++) Pick(state, damage);
+        Check(damage.Stacks == 20, "Extended stack limit enforced");
         Check(Enumerable.Range(0, 500).All(_ => !state.Draw().Contains(damage)), "Capped upgrade excluded");
         var rate = Find(state, "Mecanismos ágiles"); Pick(state, rate);
         Check(Math.Abs(data.FireRate - 2.12f) < .001f, "Fire rate modifier");
@@ -56,7 +56,14 @@ static class Program
         Check(Math.Abs(state.Multiplier("area", new CannonAttackData()) - 1.1f) < .001f &&
             state.Multiplier("area", new FlameAttackData()) == 1, "Family-specific area");
         var bounce = Find(state, "Arco adicional"); Pick(state, bounce); Pick(state, bounce); Pick(state, bounce);
-        Check(state.Bonus("bounces", new LightningAttackData()) == 2, "Rebound limit");
+        Check(state.Bonus("bounces", new LightningAttackData()) == 3, "Rebound stacks");
+        var critical = Find(state, "Presagio certero"); Pick(state, critical);
+        Check(Math.Abs(state.ResolveDamage(100, new ArcaneAttackData(), .02f) - 175f) < .001f &&
+            Math.Abs(state.ResolveDamage(100, new ArcaneAttackData(), .9f) - 100f) < .001f,
+            "Critical chance resolves once from a supplied roll");
+        var burn = Find(state, "Brasas persistentes"); Pick(state, burn);
+        Check(Math.Abs(state.Bonus("burn", new FlameAttackData()) - .2f) < .001f &&
+            state.Bonus("burn", new CannonAttackData()) == 0f, "Burn remains flame-specific");
         var discount = Find(state, "Construcción eficiente"); Pick(state, discount);
         Check(data.Cost == 95, "Purchase price updates");
         Check(state.BlocksInput, "Closing click blocked");
@@ -119,13 +126,16 @@ namespace UnityEngine
     public static class Mathf
     {
         public static int Min(int a, int b) => Math.Min(a,b);
+        public static float Min(float a, float b) => Math.Min(a,b);
         public static int Max(int a, int b) => Math.Max(a,b);
         public static float Max(float a, float b) => Math.Max(a,b);
+        public static float Clamp01(float value) => Math.Clamp(value, 0f, 1f);
         public static int CeilToInt(float value) => (int)Math.Ceiling(value);
     }
     public static class Random
     {
         static readonly System.Random rng = new System.Random(12345);
         public static int Range(int min, int max) => rng.Next(min,max);
+        public static float value => (float)rng.NextDouble();
     }
 }

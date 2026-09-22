@@ -46,6 +46,12 @@ public class FlameAttackData : TowerAttackData
                 affectedEnemies.Add(health))
             {
                 health.TakeDamage(directDamage);
+                float burnRatio = RunUpgradeState.Current.Bonus("burn", this);
+                if (burnRatio > 0f){
+                    float burnDuration = 2.5f +
+                        RunUpgradeState.Current.Bonus("burn_duration", this);
+                    health.ApplyBurn(directDamage * burnRatio, burnDuration);
+                }
             }
         }
 

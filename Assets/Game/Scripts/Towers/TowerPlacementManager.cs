@@ -136,6 +136,10 @@ public class TowerPlacementManager : MonoBehaviour{
         constructionGrid?.Hide();
     }
 
+    public void RefreshConstructionGrid(){
+        constructionGrid?.Refresh();
+    }
+
     private void UpdatePreview(){
         Vector2 mousePosition = Mouse.current.position.ReadValue();
 
@@ -370,6 +374,7 @@ public class TowerPlacementManager : MonoBehaviour{
         // Imported tower Animators may write transforms on the prefab root.
         // Animate an external container so FEEL never competes with those curves.
         GameObject animationRoot = new GameObject($"{placedTower.name} Placement Root");
+        animationRoot.AddComponent<PlacedTowerRoot>();
         animationRoot.transform.SetPositionAndRotation(
             placedTower.transform.position,
             Quaternion.identity
@@ -406,3 +411,5 @@ public class TowerPlacementManager : MonoBehaviour{
         feedbacks.PlayFeedbacks(animationRoot.transform.position);
     }
 }
+
+public sealed class PlacedTowerRoot : MonoBehaviour{}

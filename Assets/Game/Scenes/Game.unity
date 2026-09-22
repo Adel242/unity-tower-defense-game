@@ -208,29 +208,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c22b357324888e46b4407acd61640c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaveManager
-  waves:
-  - {fileID: 11400000, guid: c337e7c566bbb2940b2f62de25317ef3, type: 2}
-  - {fileID: 11400000, guid: 2583cdbe6926d06468d0c97a70276875, type: 2}
-  - {fileID: 11400000, guid: f0031e1088534beea66c0af99d9e91df, type: 2}
-  - {fileID: 11400000, guid: 8e7f12aba21948c5904ea38d053e5050, type: 2}
-  - {fileID: 11400000, guid: a18af8ef78ba4f9ea48761befd5e63a6, type: 2}
-  - {fileID: 11400000, guid: 85041413a17f41878e8254febfb04cfd, type: 2}
-  - {fileID: 11400000, guid: c85460e8c1d844379468cedacb6e1284, type: 2}
-  - {fileID: 11400000, guid: 44f2adda2e4643969bc28d863e4ecace, type: 2}
-  - {fileID: 11400000, guid: b3cf073ec3e847e889f9ac9ddcb0a494, type: 2}
-  - {fileID: 11400000, guid: c0a565a013cc41479485ab83564615b6, type: 2}
-  - {fileID: 11400000, guid: 92228c04aaa74b9f9074621a88cee478, type: 2}
-  - {fileID: 11400000, guid: 96eff2428d2a4516b31012c52d136e03, type: 2}
-  - {fileID: 11400000, guid: bf235ed041674b49a578a20c00000013, type: 2}
-  - {fileID: 11400000, guid: bf235ed041674b49a578a20c00000014, type: 2}
-  - {fileID: 11400000, guid: bf235ed041674b49a578a20c00000015, type: 2}
-  - {fileID: 11400000, guid: bf235ed041674b49a578a20c00000016, type: 2}
-  - {fileID: 11400000, guid: bf235ed041674b49a578a20c00000017, type: 2}
-  - {fileID: 11400000, guid: bf235ed041674b49a578a20c00000018, type: 2}
-  - {fileID: 11400000, guid: bf235ed041674b49a578a20c00000019, type: 2}
-  - {fileID: 11400000, guid: bf235ed041674b49a578a20c00000020, type: 2}
   enemySpawner: {fileID: 1793314429}
   timeBetweenWaves: 10
+  enemyPrefab: {fileID: 4663588816647234693, guid: 0764cf17c5c8c2c4badad5f2a5a698be, type: 3}
+  baseEnemyCount: 15
+  enemiesAddedPerWave: 2.25
+  initialSpawnInterval: 1.12
+  minimumSpawnInterval: 0.14
+  spawnIntervalDecay: 0.965
+  initialHealthMultiplier: 0.6
+  healthGrowthPerWave: 1.115
+  maximumHealthMultiplier: 1000000
+  speedAddedPerWave: 0.015
+  maximumSpeedMultiplier: 1.9
   upgradePanel: {fileID: 2200010000}
   upgradeButtons:
   - {fileID: 2200010204}
@@ -885,6 +875,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60e12c586e9747c3974754b952b9e515, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerSelectionManager
+  destructionComputeShader: {fileID: 7200000, guid: 464b4875e5462c0468b8372c24d8c021, type: 3}
+  destructionShader: {fileID: 4800000, guid: fc69ed8e390e936458a28219f93e6046, type: 3}
+  destructionParticles: {fileID: 7074040711308098837, guid: fac253c45a46001458eda61bab5ede26, type: 3}
+  destructionSound: {fileID: 0}
+  enemyDestructionChance: 0.22
+  maxConcurrentEnemyDestructions: 3
+  enemyDestructionMaxDistance: 32
 --- !u!4 &981393467
 Transform:
   m_ObjectHideFlags: 0
