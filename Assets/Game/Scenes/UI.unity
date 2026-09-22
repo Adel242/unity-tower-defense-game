@@ -1151,7 +1151,6 @@ RectTransform:
   m_Children:
   - {fileID: 2110000001}
   - {fileID: 2110000011}
-  - {fileID: 1333141263}
   - {fileID: 487362928}
   - {fileID: 312036758}
   - {fileID: 2100000101}
@@ -1159,6 +1158,7 @@ RectTransform:
   - {fileID: 1445955381}
   - {fileID: 2435091}
   - {fileID: 340771607}
+  - {fileID: 1333141263}
   - {fileID: 2110000021}
   - {fileID: 2110000031}
   - {fileID: 2110000301}

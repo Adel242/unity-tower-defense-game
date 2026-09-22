@@ -251,6 +251,11 @@ public class TowerSelectionManager : MonoBehaviour{
 
         selectedTower = tower;
         UpdateSelectionIndicator();
+
+        if (infoPanel == null){
+            infoPanel = FindFirstObjectByType<TowerInfoPanel>();
+        }
+
         RefreshPanel();
     }
 
