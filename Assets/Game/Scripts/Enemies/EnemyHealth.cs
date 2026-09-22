@@ -22,7 +22,26 @@ public class EnemyHealth : MonoBehaviour{
     private float burnDamagePerSecond;
     private float burnRemaining;
     private float burnTickTimer;
+    private HitFlashTarget[] hitFlashTargets;
+    private float hitFlashRemaining;
     private const float BurnTickInterval = 0.5f;
+    private const float HitFlashDuration = 0.01f;
+    private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    private static readonly int ColorId = Shader.PropertyToID("_Color");
+    private static Material sharedHitFlashMaterial;
+
+    private readonly struct HitFlashTarget{
+        public readonly Renderer Renderer;
+        public readonly Material[] OriginalMaterials;
+        public readonly Material[] FlashMaterials;
+
+        public HitFlashTarget(Renderer renderer, Material[] originalMaterials,
+            Material[] flashMaterials){
+            Renderer = renderer;
+            OriginalMaterials = originalMaterials;
+            FlashMaterials = flashMaterials;
+        }
+    }
 
     private void Awake(){
         if (enemyData == null){
@@ -34,6 +53,7 @@ public class EnemyHealth : MonoBehaviour{
         goldReward = enemyData.goldReward;
         ConfigureHealthBar();
         UpdateHealthBar();
+        ConfigureHitFlash();
         hitFeedbacks = CreateScaleFeedback(
             gameObject,
             transform,
@@ -48,6 +68,7 @@ public class EnemyHealth : MonoBehaviour{
 
     private void Update(){
         UpdateBurn();
+        UpdateHitFlash();
 
         if (!healthBarInitialized){
             return;
@@ -81,6 +102,7 @@ public class EnemyHealth : MonoBehaviour{
 
         UpdateHealthBar();
         ShowDamagePopup(damage);
+        PlayHitFlash();
 
         if (currentHealth <= 0f){
             Die();
@@ -88,6 +110,81 @@ public class EnemyHealth : MonoBehaviour{
         }
 
         hitFeedbacks?.PlayFeedbacks(transform.position);
+    }
+
+    private void ConfigureHitFlash(){
+        System.Collections.Generic.List<HitFlashTarget> targets = new();
+        Material flashMaterial = GetHitFlashMaterial();
+        foreach (Renderer targetRenderer in GetComponentsInChildren<Renderer>()){
+            if (targetRenderer is ParticleSystemRenderer ||
+                targetRenderer is TrailRenderer ||
+                targetRenderer is LineRenderer){
+                continue;
+            }
+
+            Material[] originalMaterials = targetRenderer.sharedMaterials;
+            if (originalMaterials.Length == 0){ continue; }
+
+            Material[] flashMaterials = new Material[originalMaterials.Length];
+            for (int index = 0; index < flashMaterials.Length; index++){
+                flashMaterials[index] = flashMaterial;
+            }
+
+            targets.Add(new HitFlashTarget(
+                targetRenderer,
+                originalMaterials,
+                flashMaterials
+            ));
+        }
+
+        hitFlashTargets = targets.ToArray();
+    }
+
+    private static Material GetHitFlashMaterial(){
+        if (sharedHitFlashMaterial != null){ return sharedHitFlashMaterial; }
+
+        Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null){ shader = Shader.Find("Sprites/Default"); }
+        sharedHitFlashMaterial = new Material(shader){
+            name = "Enemy Hit Flash (Runtime)",
+            hideFlags = HideFlags.HideAndDontSave
+        };
+        if (sharedHitFlashMaterial.HasProperty(BaseColorId)){
+            sharedHitFlashMaterial.SetColor(BaseColorId, Color.white);
+        }
+        if (sharedHitFlashMaterial.HasProperty(ColorId)){
+            sharedHitFlashMaterial.SetColor(ColorId, Color.white);
+        }
+        return sharedHitFlashMaterial;
+    }
+
+    private void PlayHitFlash(){
+        if (hitFlashTargets == null || hitFlashTargets.Length == 0){ return; }
+        hitFlashRemaining = HitFlashDuration;
+        SetHitFlashVisible(true);
+    }
+
+    private void UpdateHitFlash(){
+        if (hitFlashRemaining <= 0f){ return; }
+
+        hitFlashRemaining = Mathf.Max(0f, hitFlashRemaining - Time.deltaTime);
+        if (hitFlashRemaining <= 0f){ SetHitFlashVisible(false); }
+    }
+
+    private void SetHitFlashVisible(bool visible){
+        foreach (HitFlashTarget target in hitFlashTargets){
+            if (target.Renderer == null){ continue; }
+            target.Renderer.sharedMaterials = visible
+                ? target.FlashMaterials
+                : target.OriginalMaterials;
+        }
+    }
+
+    private void OnDisable(){
+        if (hitFlashTargets != null){
+            SetHitFlashVisible(false);
+        }
+        hitFlashRemaining = 0f;
     }
 
     public void ApplyWaveScaling(

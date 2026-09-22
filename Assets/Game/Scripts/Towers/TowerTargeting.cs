@@ -33,21 +33,9 @@ public class TowerTargeting : MonoBehaviour {
         }
 
         cannonRecoilFeedbacks = gameObject.AddComponent<MMF_Player>();
-        cannonRecoilFeedbacks.AddFeedback(new MMF_PositionSpring
-        {
-            AnimatePositionTarget = turretHead,
-            DeclaredDuration = 0.18f,
-            Space = MMF_PositionSpring.Spaces.Local,
-            Mode = MMF_PositionSpring.Modes.Bump,
-            DampingX = 0.28f,
-            DampingY = 0.28f,
-            DampingZ = 0.24f,
-            FrequencyX = 13f,
-            FrequencyY = 13f,
-            FrequencyZ = 15f,
-            BumpPositionMin = new Vector3(0f, 0f, -0.1f),
-            BumpPositionMax = new Vector3(0f, 0f, -0.1f)
-        });
+        // Position springs can become numerically unstable after a long frame
+        // and send the imported model far outside valid world bounds. Keep the
+        // recoil visual bounded by animating scale only.
         cannonRecoilFeedbacks.AddFeedback(new MMF_Scale
         {
             AnimateScaleTarget = turretHead,
@@ -72,20 +60,16 @@ public class TowerTargeting : MonoBehaviour {
         }
 
         lightningSurgeFeedbacks = gameObject.AddComponent<MMF_Player>();
-        lightningSurgeFeedbacks.AddFeedback(new MMF_PositionSpring
+        lightningSurgeFeedbacks.AddFeedback(new MMF_Scale
         {
-            AnimatePositionTarget = turretHead,
-            DeclaredDuration = 0.2f,
-            Space = MMF_PositionSpring.Spaces.Local,
-            Mode = MMF_PositionSpring.Modes.Bump,
-            DampingX = 0.32f,
-            DampingY = 0.3f,
-            DampingZ = 0.32f,
-            FrequencyX = 16f,
-            FrequencyY = 18f,
-            FrequencyZ = 16f,
-            BumpPositionMin = new Vector3(0f, 0.035f, 0f),
-            BumpPositionMax = new Vector3(0f, 0.035f, 0f)
+            AnimateScaleTarget = turretHead,
+            Mode = MMF_Scale.Modes.Additive,
+            AnimateScaleDuration = 0.16f,
+            RemapCurveZero = 0f,
+            RemapCurveOne = 0.045f,
+            UniformScaling = true,
+            AllowAdditivePlays = false,
+            DetermineScaleOnPlay = false
         });
         lightningSurgeFeedbacks.Initialization();
     }
