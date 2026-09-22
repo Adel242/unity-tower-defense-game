@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Wave_12
   m_EditorClassIdentifier: Assembly-CSharp::WaveData
   enemyPrefab: {fileID: 4663588816647234693, guid: 0764cf17c5c8c2c4badad5f2a5a698be, type: 3}
-  enemyCount: 40
-  timeBetweenEnemies: 0.29
-  healthMultiplier: 4
-  speedMultiplier: 1.28
-  goldRewardMultiplier: 1.7
+  enemyCount: 35
+  timeBetweenEnemies: 0.72
+  healthMultiplier: 2.63
+  speedMultiplier: 1.1
+  goldRewardMultiplier: 1.25

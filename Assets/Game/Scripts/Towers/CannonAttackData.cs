@@ -48,7 +48,7 @@ public class CannonAttackData : TowerAttackData
 
             bool isInSplashRadius =
                 Vector3.Distance(enemy.transform.position, explosionPosition)
-                <= splashRadius;
+                <= splashRadius * RunUpgradeState.Current.Multiplier("area", this);
 
             if (
                 enemyHealth == null ||
@@ -60,12 +60,12 @@ public class CannonAttackData : TowerAttackData
                 continue;
             }
 
-            enemyHealth.TakeDamage(splashDamage);
+            enemyHealth.TakeDamage(splashDamage * RunUpgradeState.Current.Multiplier("damage", this));
         }
 
         TowerAttackVfx.PlayCannonExplosion(
             explosionPosition,
-            splashRadius
+            splashRadius * RunUpgradeState.Current.Multiplier("area", this)
         );
 
         return false;

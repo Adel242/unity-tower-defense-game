@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: BasicTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Basic Tower
-  damage: 5
+  damage: 4
   range: 8
   fireRate: 2
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20
   firstShotDelay: 0.25
-  cost: 100
+  cost: 50
   attackData: {fileID: 11400000, guid: b922b36b2c4c47d092c3fb2ba2a15a18, type: 2}

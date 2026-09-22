@@ -9,7 +9,6 @@ public class TowerPlacementManager : MonoBehaviour{
     [SerializeField] private LayerMask turretLayer;
 
     [SerializeField] private GameObject towerPrefab;
-    [SerializeField] private float minimumTurretDistance = 1f;
     [SerializeField, Min(0f)] private float footprintPadding = 0.08f;
     [SerializeField, Range(4, 16)] private int footprintSamples = 12;
     [SerializeField, Min(0.5f)] private float constructionCellSize = 2f;
@@ -71,6 +70,7 @@ public class TowerPlacementManager : MonoBehaviour{
     }
 
     private void Update(){
+        if (RunUpgradeState.Current.BlocksInput) return;
         ConsumedPlacementClickThisFrame = false;
 
         if (
@@ -172,11 +172,7 @@ public class TowerPlacementManager : MonoBehaviour{
             blockedLayer
         );
 
-        bool isNearTurret = Physics.CheckSphere(
-            placementPosition,
-            minimumTurretDistance,
-            turretLayer
-        );
+        bool isNearTurret = constructionGrid.IsCellOccupied(placementPosition);
 
         bool hasEnoughGold = HasEnoughGold();
         bool isFullySupported = IsFootprintFullySupported(placementPosition);
@@ -301,7 +297,7 @@ public class TowerPlacementManager : MonoBehaviour{
         }
 
         return playerGold.CanAfford(
-            targeting.TowerData.cost
+            targeting.TowerData.Cost
         );
     }
 
@@ -332,7 +328,7 @@ public class TowerPlacementManager : MonoBehaviour{
             return;
         }
 
-        int cost = targeting.TowerData.cost;
+        int cost = targeting.TowerData.Cost;
 
         if (!playerGold.SpendGold(cost)){
             return;

@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: CannonTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Cannon Tower
-  damage: 7
-  range: 12
-  fireRate: 2
+  damage: 12
+  range: 11
+  fireRate: 0.8
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20

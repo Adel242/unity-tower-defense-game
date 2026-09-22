@@ -64,7 +64,9 @@ public class EnemyHealth : MonoBehaviour{
     }
 
     public void TakeDamage(float damage){
-        if (enemyData == null){
+        // Destroy is deferred until the end of the frame. Several projectiles
+        // can still hit this instance; award gold and signal death only once.
+        if (enemyData == null || currentHealth <= 0f || damage <= 0f){
             return;
         }
 
@@ -141,7 +143,7 @@ public class EnemyHealth : MonoBehaviour{
 
     private void Die(){
         if (playerGold != null && enemyData != null){
-            playerGold.AddGold(goldReward);
+            playerGold.AddEnemyReward(goldReward);
         }
 
         EnemyDeathVfx.Play(transform.position);

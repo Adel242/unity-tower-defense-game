@@ -11,6 +11,61 @@ public class WaveManager : MonoBehaviour{
     [SerializeField] private WaveData[] waves;
     [SerializeField] private EnemySpawner enemySpawner;
     [SerializeField] private float timeBetweenWaves = 10f;
+    [Header("Run upgrades")]
+    [SerializeField] private GameObject upgradePanel;
+    [SerializeField] private UnityEngine.UI.Button[] upgradeButtons;
+    [SerializeField] private TMPro.TMP_Text[] upgradeLabels;
+    [SerializeField] private TMPro.TMP_Text upgradeTitle;
+    private RunUpgradeState.Choice[] offeredUpgrades;
+
+    private void Awake(){
+        RunUpgradeState.Reset();
+        if (upgradePanel != null) upgradePanel.SetActive(false);
+        if (upgradeButtons != null)
+            for (int i = 0; i < upgradeButtons.Length; i++){
+                int index = i;
+                upgradeButtons[i].onClick.AddListener(() => ChooseUpgrade(index));
+            }
+    }
+
+    private void OnDestroy(){ RunUpgradeState.Reset(); }
+
+    private void Update(){
+        // Let the existing pause menu remain visible and usable above the draft.
+        if (RunUpgradeState.Current.Choosing && upgradePanel != null)
+            upgradePanel.SetActive(Time.timeScale > 0f);
+    }
+
+    private IEnumerator OfferUpgrades(int milestone){
+        if (upgradePanel == null || upgradeButtons == null || upgradeButtons.Length != 3 ||
+            upgradeLabels == null || upgradeLabels.Length != 3){
+            Debug.LogError("Upgrade cards are not configured on WaveManager.");
+            yield break;
+        }
+        offeredUpgrades = RunUpgradeState.Current.Draw();
+        if (offeredUpgrades.Length == 0) yield break;
+        FindFirstObjectByType<TowerPlacementManager>()?.CancelBuildMode();
+        RunUpgradeState.Current.Choosing = true;
+        upgradeTitle.text = milestone == 1 ? "ELIGE TU PRIMERA MEJORA" : $"OLEADA {milestone} COMPLETADA · ELIGE UNA MEJORA";
+        for (int i = 0; i < 3; i++){
+            upgradeButtons[i].gameObject.SetActive(i < offeredUpgrades.Length);
+            if (i >= offeredUpgrades.Length) continue;
+            var choice = offeredUpgrades[i];
+            upgradeLabels[i].text = $"<size=26><b>{choice.Title}</b></size>\n\n{choice.Description}\n\n<size=16>Nivel {choice.Stacks + 1}/{choice.Limit}\n\nELEGIR</size>";
+        }
+        upgradePanel.SetActive(true);
+        upgradeButtons[0].Select();
+        while (RunUpgradeState.Current.Choosing) yield return null;
+        upgradePanel.SetActive(false);
+        UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(null);
+    }
+
+    private void ChooseUpgrade(int index){
+        if (!RunUpgradeState.Current.Choosing || Time.timeScale == 0f ||
+            offeredUpgrades == null || index < 0 || index >= offeredUpgrades.Length) return;
+        RunUpgradeState.Current.Apply(offeredUpgrades[index]);
+        upgradePanel.SetActive(false);
+    }
 
     private int currentWaveIndex;
     private int enemiesAlive;
@@ -90,6 +145,7 @@ public class WaveManager : MonoBehaviour{
 
     private IEnumerator RunWaves(){
         waitingForFirstWave = true;
+        yield return OfferUpgrades(1);
 
         while (waitingForFirstWave){
             yield return null;
@@ -118,6 +174,7 @@ public class WaveManager : MonoBehaviour{
             completedWaveCount = currentWaveIndex + 1;
             waveActive = false;
             Debug.Log($"Wave {CurrentWaveNumber} completed.");
+            if (completedWaveCount % 5 == 0) yield return OfferUpgrades(completedWaveCount);
             // One-shot audio owns its short lifetime and fade, including the
             // final impact. Ending the wave must not cut that tail off.
 
@@ -149,6 +206,7 @@ public class WaveManager : MonoBehaviour{
     }
 
     public void StartNextWaveNow(){
+        if (RunUpgradeState.Current.BlocksInput) return;
         if (waitingForFirstWave){
             waitingForFirstWave = false;
             return;

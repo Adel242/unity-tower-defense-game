@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: FlameTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Flame Tower
-  damage: 3
+  damage: 2
   range: 6
-  fireRate: 2
+  fireRate: 3
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20
   firstShotDelay: 0.25
-  cost: 100
+  cost: 75
   attackData: {fileID: 11400000, guid: 6ca1ad1fc3f44d83bc7e20639878ac68, type: 2}

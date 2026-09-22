@@ -8,12 +8,7 @@ public class TowerSelectionManager : MonoBehaviour{
     private TowerPlacementManager placementManager;
     private TowerInfoPanel infoPanel;
     private TowerTargeting selectedTower;
-    private int turretMask;
     private LineRenderer selectionIndicator;
-
-    private void Awake(){
-        turretMask = LayerMask.GetMask("Turrets");
-    }
 
     private void OnEnable(){
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -38,6 +33,7 @@ public class TowerSelectionManager : MonoBehaviour{
 
     // Run after UI events and construction have processed this frame's input.
     private void LateUpdate(){
+        if (RunUpgradeState.Current.BlocksInput){ SelectTower(null); return; }
         if (
             placementManager != null &&
             placementManager.ConsumedPlacementClickThisFrame
@@ -72,27 +68,43 @@ public class TowerSelectionManager : MonoBehaviour{
         Ray ray = mainCamera.ScreenPointToRay(mouse.position.ReadValue());
         TowerTargeting tower = null;
 
-        RaycastHit[] hits = Physics.RaycastAll(
-            ray,
-            1000f,
-            Physics.AllLayers,
-            QueryTriggerInteraction.Ignore
-        );
+        float closestDistance = 1000f;
+        // Only run on a click. Broad selection capsules overlap adjacent towers;
+        // test each model part in its own local space instead.
+        foreach (TowerTargeting candidate in FindObjectsByType<TowerTargeting>(
+            FindObjectsSortMode.None)){
+            if (!candidate.isActiveAndEnabled || candidate.TowerData == null){
+                continue;
+            }
 
-        System.Array.Sort(hits, (first, second) =>
-            first.distance.CompareTo(second.distance));
+            foreach (Renderer part in candidate.GetComponentsInChildren<Renderer>()){
+                // Ignore particles, trails and the selection ring itself.
+                if (!(part is MeshRenderer) && !(part is SkinnedMeshRenderer)){
+                    continue;
+                }
 
-        foreach (RaycastHit hit in hits){
-            TowerTargeting hitTower =
-                hit.collider.GetComponentInParent<TowerTargeting>();
+                if (!part.enabled || part.forceRenderingOff ||
+                    (mainCamera.cullingMask & (1 << part.gameObject.layer)) == 0){
+                    continue;
+                }
 
-            if (
-                hitTower != null &&
-                hitTower.isActiveAndEnabled &&
-                hitTower.TowerData != null
-            ){
-                tower = hitTower;
-                break;
+                Matrix4x4 toLocal = part.worldToLocalMatrix;
+                Ray localRay = new Ray(
+                    toLocal.MultiplyPoint3x4(ray.origin),
+                    toLocal.MultiplyVector(ray.direction)
+                );
+                if (!part.localBounds.IntersectRay(localRay, out float localDistance)){
+                    continue;
+                }
+
+                // Local ray distances cannot be compared across differently scaled parts.
+                Vector3 worldHit = part.localToWorldMatrix.MultiplyPoint3x4(
+                    localRay.GetPoint(localDistance));
+                float distance = Vector3.Dot(worldHit - ray.origin, ray.direction);
+                if (distance >= 0f && distance < closestDistance){
+                    closestDistance = distance;
+                    tower = candidate;
+                }
             }
         }
 

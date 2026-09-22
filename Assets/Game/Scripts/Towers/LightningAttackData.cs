@@ -27,7 +27,7 @@ public class LightningAttackData : TowerAttackData
             directTarget.TakeDamage(directDamage);
         }
 
-        if (affectedEnemies.Count > maxBounces)
+        if (affectedEnemies.Count > maxBounces + Mathf.RoundToInt(RunUpgradeState.Current.Bonus("bounces", this)))
         {
             return false;
         }
@@ -61,7 +61,7 @@ public class LightningAttackData : TowerAttackData
                 enemy.transform.position
             );
 
-            if (distance < closestDistance && distance <= bounceRange)
+            if (distance < closestDistance && distance <= bounceRange * RunUpgradeState.Current.Multiplier("chain", this))
             {
                 EnemyMovement movement =
                     enemy.GetComponent<EnemyMovement>();

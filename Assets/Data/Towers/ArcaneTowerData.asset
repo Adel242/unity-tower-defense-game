@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: ArcaneTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Arcane Tower
-  damage: 24
+  damage: 32
   range: 12
-  fireRate: 0.8
+  fireRate: 0.6
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20
   firstShotDelay: 0.25
-  cost: 100
+  cost: 130
   attackData: {fileID: 11400000, guid: 74e56c67e4624258a871c442a46f794d, type: 2}

@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a5b51a97b86070a4f9b5d631dd7950e3, type: 3}
-  m_Name: Wave_09
+  m_Name: Wave_17
   m_EditorClassIdentifier: Assembly-CSharp::WaveData
   enemyPrefab: {fileID: 4663588816647234693, guid: 0764cf17c5c8c2c4badad5f2a5a698be, type: 3}
-  enemyCount: 28
-  timeBetweenEnemies: 0.72
-  healthMultiplier: 1.66
-  speedMultiplier: 1.32
-  goldRewardMultiplier: 1.125
+  enemyCount: 43
+  timeBetweenEnemies: 0.68
+  healthMultiplier: 4.6
+  speedMultiplier: 1.15
+  goldRewardMultiplier: 1.375

@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: ArrowTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Arrow Tower
-  damage: 7
+  damage: 5
   range: 12
   fireRate: 2
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20
   firstShotDelay: 0.25
-  cost: 100
+  cost: 75

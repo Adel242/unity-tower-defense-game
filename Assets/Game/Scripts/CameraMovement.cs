@@ -43,6 +43,7 @@ public class CameraMovement : MonoBehaviour {
     }
 
     private void Update(){
+        if (RunUpgradeState.Current.BlocksInput) return;
         Keyboard keyboard = Keyboard.current;
 
         if (keyboard == null || Time.timeScale == 0f){

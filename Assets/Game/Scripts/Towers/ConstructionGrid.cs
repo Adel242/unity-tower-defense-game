@@ -9,6 +9,7 @@ public sealed class ConstructionGrid : IDisposable
     private readonly LayerMask blockedLayer;
     private readonly LayerMask turretLayer;
     private readonly Transform owner;
+    private readonly HashSet<Vector2Int> occupiedCells = new HashSet<Vector2Int>();
     private readonly List<GridCell> terrainCells = new List<GridCell>();
     private readonly Dictionary<Vector2Int, GridCell> cellsByCoordinate =
         new Dictionary<Vector2Int, GridCell>();
@@ -97,6 +98,22 @@ public sealed class ConstructionGrid : IDisposable
         if (gridMesh == null)
         {
             return;
+        }
+
+        // Selection colliders intentionally extend beyond a tower's cell.
+        // Occupancy must not depend on those colliders or construction VFX scale.
+        occupiedCells.Clear();
+        foreach (TowerTargeting tower in UnityEngine.Object.FindObjectsByType<TowerTargeting>(
+            FindObjectsSortMode.None))
+        {
+            // Build previews have targeting disabled and must never reserve cells.
+            if (!tower.isActiveAndEnabled ||
+                !IsInLayerMask(tower.gameObject.layer, turretLayer))
+            {
+                continue;
+            }
+
+            occupiedCells.Add(GetCoordinate(tower.transform.position));
         }
 
         List<Vector3> vertices = new List<Vector3>();
@@ -433,13 +450,17 @@ public sealed class ConstructionGrid : IDisposable
         );
     }
 
-    private bool IsCellOccupied(Vector3 position)
+    private Vector2Int GetCoordinate(Vector3 position)
     {
-        return Physics.CheckSphere(
-            position,
-            cellSize * 0.38f,
-            turretLayer
+        return new Vector2Int(
+            Mathf.RoundToInt(position.x / cellSize),
+            Mathf.RoundToInt(position.z / cellSize)
         );
+    }
+
+    public bool IsCellOccupied(Vector3 position)
+    {
+        return occupiedCells.Contains(GetCoordinate(position));
     }
 
     private void AddCellBorder(

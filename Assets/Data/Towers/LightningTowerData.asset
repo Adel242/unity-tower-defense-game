@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: LightningTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Lightning Tower
-  damage: 7
-  range: 12
-  fireRate: 2
+  damage: 5
+  range: 10
+  fireRate: 1.6
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20
   firstShotDelay: 0.25
-  cost: 100
+  cost: 120
   attackData: {fileID: 11400000, guid: 574e9cc7ebdbf9c4ca7ba377a23948b1, type: 2}

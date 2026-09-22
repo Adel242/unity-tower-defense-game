@@ -16,6 +16,7 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private bool hovered;
     private bool focused;
     private Vector3 restingScale;
+    private RunUpgradeState upgrades;
 
     private void Awake(){
         restingScale = transform.localScale;
@@ -39,6 +40,8 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
     }
 
     private void Start(){
+        upgrades = RunUpgradeState.Current;
+        upgrades.Changed += OnUpgradeChanged;
         placementManager =
             FindFirstObjectByType<TowerPlacementManager>();
 
@@ -60,12 +63,14 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
     }
 
     private void OnDestroy(){
+        if (upgrades != null) upgrades.Changed -= OnUpgradeChanged;
         if (playerGold != null){
             playerGold.GoldChanged -= UpdateAffordability;
         }
     }
 
     public void StartBuildMode(){
+        if (RunUpgradeState.Current.BlocksInput) return;
         if (
             placementManager == null ||
             towerPrefab == null ||
@@ -79,6 +84,7 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
     }
 
     private void UpdateVisuals(){
+        // Called again when session discounts change.
         if (towerPrefab == null){
             return;
         }
@@ -90,7 +96,7 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
         }
 
-        towerCost = targeting.TowerData.cost;
+        towerCost = targeting.TowerData.Cost;
 
         label = GetComponentInChildren<TMP_Text>();
 
@@ -98,7 +104,7 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
             TowerData data = targeting.TowerData;
             label.text =
                 $"<b>{data.towerName}</b>\n" +
-                $"<color=#F5CA70>{data.cost} G</color>";
+                $"<color=#F5CA70>{data.Cost} G</color>";
             label.alignment = TextAlignmentOptions.Center;
             label.fontSize = 13f;
             label.enableAutoSizing = true;
@@ -142,5 +148,10 @@ public class TowerBuildButton : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (label != null){
             label.alpha = button.interactable ? 1f : 0.4f;
         }
+    }
+
+    private void OnUpgradeChanged(){
+        UpdateVisuals();
+        if (playerGold != null) UpdateAffordability(playerGold.CurrentGold);
     }
 }

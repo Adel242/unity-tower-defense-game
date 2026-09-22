@@ -10,6 +10,7 @@ public class TowerTargeting : MonoBehaviour {
     public TowerData TowerData => towerData;
 
     private Transform target;
+    private Transform targetRoot;
     private float fireCooldown = 0f;
     private float currentYaw;
     private MMF_Player cannonRecoilFeedbacks;
@@ -150,19 +151,17 @@ public class TowerTargeting : MonoBehaviour {
 
     private void UpdateTarget()
     {
-        if (target != null)
+        if (target != null && targetRoot != null)
         {
-            float currentTargetDistance = Vector3.Distance(
-                transform.position,
-                target.position
-            );
+            float currentTargetDistance = HorizontalDistance(targetRoot.position);
 
-            if (currentTargetDistance <= towerData.range)
+            if (currentTargetDistance <= towerData.Range)
             {
                 return;
             }
 
             target = null;
+            targetRoot = null;
         }
 
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
@@ -172,12 +171,9 @@ public class TowerTargeting : MonoBehaviour {
 
         foreach (GameObject enemy in enemies)
         {
-            float distance = Vector3.Distance(
-                transform.position,
-                enemy.transform.position
-            );
+            float distance = HorizontalDistance(enemy.transform.position);
 
-            if (distance < closestDistance && distance <= towerData.range)
+            if (distance < closestDistance && distance <= towerData.Range)
             {
                 closestDistance = distance;
                 closestEnemy = enemy;
@@ -192,6 +188,7 @@ public class TowerTargeting : MonoBehaviour {
             if (enemyMovement != null && enemyMovement.TargetPoint != null)
             {
                 target = enemyMovement.TargetPoint;
+                targetRoot = closestEnemy.transform;
                 fireCooldown = towerData.firstShotDelay;
             }
         }
@@ -216,6 +213,13 @@ public class TowerTargeting : MonoBehaviour {
         );
 
         turretHead.rotation = Quaternion.Euler(0f, currentYaw, 0f);
+    }
+
+    private float HorizontalDistance(Vector3 position)
+    {
+        Vector3 offset = position - transform.position;
+        offset.y = 0f;
+        return offset.magnitude;
     }
 
     private bool IsAimingAtTarget()
@@ -243,11 +247,19 @@ public class TowerTargeting : MonoBehaviour {
         if (fireCooldown <= 0f)
         {
             Shoot();
-            fireCooldown = 1f / towerData.fireRate;
+            fireCooldown = 1f / towerData.FireRate;
         }
     }
 
     private void Shoot(){
+        if (towerData.AttackData is FlameAttackData flame && targetRoot != null){
+            // A flame pulse is an area attack, not a delayed homing projectile.
+            flame.FireCone(transform.position, firePoint.position,
+                targetRoot.position, towerData.Range, towerData.Damage);
+            TowerAttackAudio.PlayShot(flame, firePoint.position);
+            return;
+        }
+
         ProjectilePool projectilePool =
             ProjectilePool.GetShared(projectilePrefab);
 
@@ -258,7 +270,7 @@ public class TowerTargeting : MonoBehaviour {
 
         projectile.SetTarget(
             target,
-            towerData.damage,
+            towerData.Damage,
             towerData.AttackData
         );
 
@@ -290,6 +302,6 @@ public class TowerTargeting : MonoBehaviour {
             return;
         }
 
-        Gizmos.DrawWireSphere(transform.position, towerData.range);
+        Gizmos.DrawWireSphere(transform.position, towerData.Range);
     }
 }

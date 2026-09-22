@@ -44,10 +44,10 @@ public class TowerInfoPanel : MonoBehaviour{
         bool changed = true;
         displayedData = data;
         SetText(towerNameText, $"<size=10><color=#7994AC>TORRE</color></size>\n<b>{data.towerName}</b>", 21f);
-        SetText(damageText, $"<size=10><color=#9BAFC4>DAÑO</color></size>\n<b>{data.damage:0.#}</b>", 24f);
-        SetText(rangeText, $"<size=10><color=#9BAFC4>ALCANCE</color></size>\n<b>{data.range:0.#}</b>", 24f);
-        SetText(fireRateText, $"<size=10><color=#9BAFC4>CADENCIA</color></size>\n<b>{data.fireRate:0.##}</b><size=13> /s</size>", 24f);
-        SetText(costText, $"<size=10><color=#9BAFC4>COSTE</color></size>\n<color=#F5CA70><b>{data.cost}</b><size=13> G</size></color>", 24f);
+        SetText(damageText, $"<size=10><color=#9BAFC4>DAÑO</color></size>\n<b>{data.Damage:0.#}</b>", 24f);
+        SetText(rangeText, $"<size=10><color=#9BAFC4>ALCANCE</color></size>\n<b>{data.Range:0.#}</b>", 24f);
+        SetText(fireRateText, $"<size=10><color=#9BAFC4>CADENCIA</color></size>\n<b>{data.FireRate:0.##}</b><size=13> /s</size>", 24f);
+        SetText(costText, $"<size=10><color=#9BAFC4>COSTE</color></size>\n<color=#F5CA70><b>{data.Cost}</b><size=13> G</size></color>", 24f);
         panelRoot.SetActive(true);
         if (!changed){ return; }
         if (reveal != null){ StopCoroutine(reveal); }

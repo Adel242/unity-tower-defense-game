@@ -17,3 +17,4 @@ MonoBehaviour:
   speed: 2
   rotationSpeed: 240
   baseDamage: 10
+  goldReward: 8
