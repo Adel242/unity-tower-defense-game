@@ -11,6 +11,7 @@ public class WaveUI : MonoBehaviour{
     [SerializeField] private Button startWaveButton;
     [SerializeField] private WaveProgressBar waveProgressBar;
     [SerializeField] private TMP_Text waveAnnouncement;
+    [SerializeField] private GameObject hudRoot;
 
     private WaveManager waveManager;
     private TMP_Text startWaveButtonText;
@@ -26,6 +27,7 @@ public class WaveUI : MonoBehaviour{
     private int lastProgressMilestone;
     private int lastFeedbackWave;
     private const float AnnouncementDuration = 2.6f;
+    private bool hudVisible;
 
     private void Start(){
         waveManager = FindFirstObjectByType<WaveManager>();
@@ -40,6 +42,7 @@ public class WaveUI : MonoBehaviour{
 
         StyleHud();
         ConfigureFeelFeedbacks();
+        SetHudVisible(waveManager.GameplayReady);
         waveManager.WaveStarted += OnWaveStarted;
     }
 
@@ -67,6 +70,12 @@ public class WaveUI : MonoBehaviour{
 
     private void Update(){
         if (waveManager == null){
+            return;
+        }
+
+        SetHudVisible(waveManager.GameplayReady);
+
+        if (!waveManager.GameplayReady){
             return;
         }
 
@@ -116,6 +125,19 @@ public class WaveUI : MonoBehaviour{
 
         waveRequestedFeedbacks?.PlayFeedbacks(waveText.transform.position);
         waveManager.StartNextWaveNow();
+    }
+
+    private void SetHudVisible(bool visible){
+        if (hudRoot == null){
+            return;
+        }
+
+        if (hudVisible == visible && hudRoot.activeSelf == visible){
+            return;
+        }
+
+        hudVisible = visible;
+        hudRoot.SetActive(visible);
     }
 
     private void OnWaveStarted(int waveNumber){

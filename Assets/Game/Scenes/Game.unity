@@ -1434,6 +1434,13 @@ MonoBehaviour:
   moveSpeed: 20
   acceleration: 90
   deceleration: 110
+  edgeScrolling: 1
+  edgeScrollThickness: 18
+  rotationSensitivity: 0.12
+  doubleClickWindow: 0.28
+  neutralReturnDuration: 0.38
+  normalCursor: {fileID: 2800000, guid: e3c070583c1b4a5d8f76e8b71193890f, type: 3}
+  normalCursorHotspot: {x: 11, y: 3}
   minX: -40
   maxX: 40
   minZ: -40

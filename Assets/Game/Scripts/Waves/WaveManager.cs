@@ -33,6 +33,7 @@ public class WaveManager : MonoBehaviour{
     private float upgradeRevealTime;
     private bool confirmingUpgrade;
     private bool showingMission;
+    private bool gameplayReady;
     private MMF_Player[] cardReveal, cardFocus, cardBlur, cardConfirm;
     private bool[] cardHighlighted;
     private UnityEngine.UI.Outline[] cardBorders;
@@ -435,6 +436,7 @@ public class WaveManager : MonoBehaviour{
 
     public bool WaitingForFirstWave => waitingForFirstWave;
     public bool WaitingForNextWave => waitingForNextWave;
+    public bool GameplayReady => gameplayReady;
 
     public event Action<int> WaveStarted;
 
@@ -483,7 +485,9 @@ public class WaveManager : MonoBehaviour{
     }
 
     private IEnumerator RunWaves(){
+        gameplayReady = false;
         yield return ShowMission();
+        gameplayReady = true;
         waitingForFirstWave = true;
 
         while (waitingForFirstWave){

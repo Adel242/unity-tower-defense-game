@@ -473,6 +473,7 @@ MonoBehaviour:
   startWaveButton: {fileID: 1445955382}
   waveProgressBar: {fileID: 2100000103}
   waveAnnouncement: {fileID: 2110000303}
+  hudRoot: {fileID: 405853589}
 --- !u!114 &227450967
 MonoBehaviour:
   m_ObjectHideFlags: 0

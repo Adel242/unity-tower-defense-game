@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22e6f802c98e9194eb2b42cfcfcc6f8d, type: 3}
   m_Name: CannonAttackData
   m_EditorClassIdentifier: Assembly-CSharp::CannonAttackData
-  projectileSpeed: 18
+  projectileSpeed: 30
   shotSound: {fileID: 8300000, guid: 762fc96f6512491f91b550c14146cc4c, type: 3}
   shotVolume: 0.34
   impactSound: {fileID: 0}
   impactVolume: 0.3
-  arcHeight: 2
-  gravity: 30
+  arcHeight: 1.5
+  gravity: 35
   splashDamage: 7
   splashRadius: 3.5
   enemyLayer:
