@@ -10,8 +10,6 @@ public class TowerSelectionManager : MonoBehaviour{
     private TowerTargeting selectedTower;
     private LineRenderer selectionIndicator;
     private Mesh selectionMesh;
-    private readonly System.Collections.Generic.List<Vector3> selectionVertices = new System.Collections.Generic.List<Vector3>();
-    private readonly System.Collections.Generic.List<int> selectionTriangles = new System.Collections.Generic.List<int>();
 
     private void OnDestroy(){
         if (selectionMesh != null) Destroy(selectionMesh);
@@ -87,6 +85,9 @@ public class TowerSelectionManager : MonoBehaviour{
                 continue;
             }
 
+            bool hasCandidateScreenBounds = false;
+            Rect candidateScreenBounds = default;
+
             foreach (Renderer part in candidate.GetComponentsInChildren<Renderer>()){
                 // Ignore particles, trails and the selection ring itself.
                 if (!(part is MeshRenderer) && !(part is SkinnedMeshRenderer)){
@@ -108,50 +109,31 @@ public class TowerSelectionManager : MonoBehaviour{
                     Ray poseRay = new Ray(inverse.MultiplyPoint3x4(ray.origin),
                         inverse.MultiplyVector(ray.direction).normalized);
                     selectionMesh.RecalculateBounds();
-                    bool intersectsBounds = selectionMesh.bounds.IntersectRay(poseRay);
-                    selectionMesh.GetVertices(selectionVertices);
-                    bool candidateHit = false;
-                    for (int submesh = 0; submesh < selectionMesh.subMeshCount; submesh++){
-                        if (selectionMesh.GetTopology(submesh) != MeshTopology.Triangles) continue;
-                        selectionMesh.GetTriangles(selectionTriangles, submesh);
-                        for (int i = 0; i < selectionTriangles.Count; i += 3){
-                            Vector3 a = selectionVertices[selectionTriangles[i]];
-                            Vector3 b = selectionVertices[selectionTriangles[i + 1]];
-                            Vector3 c = selectionVertices[selectionTriangles[i + 2]];
-                            if (!intersectsBounds || !IntersectTriangle(poseRay, a, b, c, out float localHit)) continue;
-                            Vector3 worldPoint = skinned.transform.TransformPoint(poseRay.GetPoint(localHit));
-                            float hitDistance = Vector3.Dot(worldPoint - ray.origin, ray.direction);
-                            if (hitDistance >= 0f && hitDistance < closestDistance){
-                                closestDistance = hitDistance;
-                                tower = candidate;
-                                candidateHit = true;
-                            }
+                    Bounds poseBounds = selectionMesh.bounds;
+                    if (poseBounds.IntersectRay(poseRay, out float localHit)){
+                        Vector3 worldPoint = skinned.transform.TransformPoint(
+                            poseRay.GetPoint(localHit));
+                        float hitDistance = Vector3.Dot(
+                            worldPoint - ray.origin,
+                            ray.direction
+                        );
+                        if (hitDistance >= 0f && hitDistance < closestDistance){
+                            closestDistance = hitDistance;
+                            tower = candidate;
                         }
                     }
 
-                    // Project only the eight bounds corners for the small click
-                    // tolerance. Projecting all three vertices of every triangle
-                    // made repeated clicks stall enemy movement for a frame.
-                    if (!candidateHit && TryGetScreenBounds(
+                    if (TryGetScreenBounds(
                         skinned.transform,
-                        selectionMesh.bounds,
+                        poseBounds,
                         mainCamera,
                         out Rect screenBounds
                     )){
-                        const float padding = 7f;
-                        Rect paddedBounds = new Rect(
-                            screenBounds.xMin - padding,
-                            screenBounds.yMin - padding,
-                            screenBounds.width + padding * 2f,
-                            screenBounds.height + padding * 2f
+                        EncapsulateScreenBounds(
+                            ref candidateScreenBounds,
+                            ref hasCandidateScreenBounds,
+                            screenBounds
                         );
-                        if (paddedBounds.Contains(pointer)){
-                            float screenDistance = (pointer - screenBounds.center).sqrMagnitude;
-                            if (screenDistance < nearestScreenDistance){
-                                nearestScreenDistance = screenDistance;
-                                nearbyTower = candidate;
-                            }
-                        }
                     }
                     continue;
                 }
@@ -171,21 +153,11 @@ public class TowerSelectionManager : MonoBehaviour{
                     mainCamera,
                     out Rect rigidScreenBounds
                 )){
-                    const float rigidPadding = 9f;
-                    Rect paddedBounds = new Rect(
-                        rigidScreenBounds.xMin - rigidPadding,
-                        rigidScreenBounds.yMin - rigidPadding,
-                        rigidScreenBounds.width + rigidPadding * 2f,
-                        rigidScreenBounds.height + rigidPadding * 2f
+                    EncapsulateScreenBounds(
+                        ref candidateScreenBounds,
+                        ref hasCandidateScreenBounds,
+                        rigidScreenBounds
                     );
-                    if (paddedBounds.Contains(pointer)){
-                        float screenDistance =
-                            (pointer - rigidScreenBounds.center).sqrMagnitude;
-                        if (screenDistance < nearestScreenDistance){
-                            nearestScreenDistance = screenDistance;
-                            nearbyTower = candidate;
-                        }
-                    }
                 }
 
                 if (!part.localBounds.IntersectRay(localRay, out float localDistance)){
@@ -199,6 +171,27 @@ public class TowerSelectionManager : MonoBehaviour{
                 if (distance >= 0f && distance < closestDistance){
                     closestDistance = distance;
                     tower = candidate;
+                }
+            }
+
+            // Treat the complete visible silhouette as one selectable region.
+            // This includes gaps between the arcane tower's animated pieces,
+            // while nearest-centre resolution keeps adjacent towers distinct.
+            if (hasCandidateScreenBounds){
+                const float selectionPadding = 12f;
+                Rect paddedBounds = new Rect(
+                    candidateScreenBounds.xMin - selectionPadding,
+                    candidateScreenBounds.yMin - selectionPadding,
+                    candidateScreenBounds.width + selectionPadding * 2f,
+                    candidateScreenBounds.height + selectionPadding * 2f
+                );
+                if (paddedBounds.Contains(pointer)){
+                    float screenDistance =
+                        (pointer - candidateScreenBounds.center).sqrMagnitude;
+                    if (screenDistance < nearestScreenDistance){
+                        nearestScreenDistance = screenDistance;
+                        nearbyTower = candidate;
+                    }
                 }
             }
         }
@@ -244,6 +237,25 @@ public class TowerSelectionManager : MonoBehaviour{
         return true;
     }
 
+    private static void EncapsulateScreenBounds(
+        ref Rect aggregate,
+        ref bool hasAggregate,
+        Rect addition
+    ){
+        if (!hasAggregate){
+            aggregate = addition;
+            hasAggregate = true;
+            return;
+        }
+
+        aggregate = Rect.MinMaxRect(
+            Mathf.Min(aggregate.xMin, addition.xMin),
+            Mathf.Min(aggregate.yMin, addition.yMin),
+            Mathf.Max(aggregate.xMax, addition.xMax),
+            Mathf.Max(aggregate.yMax, addition.yMax)
+        );
+    }
+
     private void SelectTower(TowerTargeting tower){
         if (selectedTower == tower){
             return;
@@ -257,23 +269,6 @@ public class TowerSelectionManager : MonoBehaviour{
         }
 
         RefreshPanel();
-    }
-
-    private static bool IntersectTriangle(Ray ray, Vector3 a, Vector3 b, Vector3 c, out float distance){
-        distance = 0f;
-        Vector3 edge1 = b - a, edge2 = c - a;
-        Vector3 p = Vector3.Cross(ray.direction, edge2);
-        float determinant = Vector3.Dot(edge1, p);
-        if (Mathf.Abs(determinant) < 0.00000001f) return false;
-        float inverse = 1f / determinant;
-        Vector3 offset = ray.origin - a;
-        float u = Vector3.Dot(offset, p) * inverse;
-        if (u < 0f || u > 1f) return false;
-        Vector3 q = Vector3.Cross(offset, edge1);
-        float v = Vector3.Dot(ray.direction, q) * inverse;
-        if (v < 0f || u + v > 1f) return false;
-        distance = Vector3.Dot(edge2, q) * inverse;
-        return distance >= 0f;
     }
 
     private void UpdateSelectionIndicator(){
