@@ -352,13 +352,22 @@ public class TowerPlacementManager : MonoBehaviour{
     }
 
     private static void PlayPlacementFeedback(GameObject placedTower){
+        // Imported tower Animators may write transforms on the prefab root.
+        // Animate an external container so FEEL never competes with those curves.
+        GameObject animationRoot = new GameObject($"{placedTower.name} Placement Root");
+        animationRoot.transform.SetPositionAndRotation(
+            placedTower.transform.position,
+            Quaternion.identity
+        );
+        placedTower.transform.SetParent(animationRoot.transform, true);
+
         GameObject feedbackObject = new GameObject("Placement Feedbacks");
-        feedbackObject.transform.SetParent(placedTower.transform, false);
+        feedbackObject.transform.SetParent(animationRoot.transform, false);
         MMF_Player feedbacks = feedbackObject.AddComponent<MMF_Player>();
         MMF_Position rise = new MMF_Position{
             Mode = MMF_Position.Modes.AtoB,
             Space = MMF_Position.Spaces.World,
-            AnimatePositionTarget = placedTower,
+            AnimatePositionTarget = animationRoot,
             AnimatePositionDuration = 0.28f,
             RelativePosition = true,
             DeterminePositionsOnPlay = false,
@@ -366,19 +375,19 @@ public class TowerPlacementManager : MonoBehaviour{
             DestinationPosition = Vector3.zero
         };
         MMF_Scale scale = new MMF_Scale{
-            Mode = MMF_Scale.Modes.Additive,
-            AnimateScaleTarget = placedTower.transform,
+            Mode = MMF_Scale.Modes.Absolute,
+            AnimateScaleTarget = animationRoot.transform,
             AnimateScaleDuration = 0.3f,
-            RemapCurveZero = 0f,
-            RemapCurveOne = 0.14f,
+            RemapCurveZero = 0.86f,
+            RemapCurveOne = 1f,
             UniformScaling = true,
             AllowAdditivePlays = false,
-            DetermineScaleOnPlay = true
+            DetermineScaleOnPlay = false
         };
 
         feedbacks.AddFeedback(rise);
         feedbacks.AddFeedback(scale);
         feedbacks.Initialization();
-        feedbacks.PlayFeedbacks(placedTower.transform.position);
+        feedbacks.PlayFeedbacks(animationRoot.transform.position);
     }
 }

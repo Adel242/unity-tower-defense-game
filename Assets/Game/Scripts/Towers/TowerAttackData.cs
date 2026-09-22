@@ -396,6 +396,15 @@ public static class TowerAttackAudio
         bool isPlacement = false
     )
     {
+        if (clip == null || !IsFinite(position) || !IsFinite(volume) ||
+            !IsFinite(maximumDuration) || !IsFinite(spatialBlend))
+        {
+            return;
+        }
+
+        volume = Mathf.Clamp01(volume);
+        spatialBlend = Mathf.Clamp01(spatialBlend);
+        maximumDuration = Mathf.Max(0.01f, maximumDuration);
         ActiveSounds.RemoveAll(soundObject => soundObject == null);
 
         int clipId = clip.GetInstanceID();
@@ -436,6 +445,12 @@ public static class TowerAttackAudio
         ActiveSounds.Add(soundObject);
         soundObject.AddComponent<TowerSoundEnvelope>().Initialize(source, maximumDuration);
     }
+
+    private static bool IsFinite(Vector3 value) =>
+        IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+
+    private static bool IsFinite(float value) =>
+        !float.IsNaN(value) && !float.IsInfinity(value);
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetState()

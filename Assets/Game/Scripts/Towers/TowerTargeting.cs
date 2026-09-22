@@ -252,11 +252,19 @@ public class TowerTargeting : MonoBehaviour {
     }
 
     private void Shoot(){
+        Vector3 shotPosition = firePoint.position;
+        Quaternion shotRotation = firePoint.rotation;
+        if (!IsFinite(shotPosition) || !IsFinite(shotRotation)){
+            target = null;
+            targetRoot = null;
+            return;
+        }
+
         if (towerData.AttackData is FlameAttackData flame && targetRoot != null){
             // A flame pulse is an area attack, not a delayed homing projectile.
-            flame.FireCone(transform.position, firePoint.position,
+            flame.FireCone(transform.position, shotPosition,
                 targetRoot.position, towerData.Range, towerData.Damage);
-            TowerAttackAudio.PlayShot(flame, firePoint.position);
+            TowerAttackAudio.PlayShot(flame, shotPosition);
             return;
         }
 
@@ -264,8 +272,8 @@ public class TowerTargeting : MonoBehaviour {
             ProjectilePool.GetShared(projectilePrefab);
 
         Projectile projectile = projectilePool.Get(
-            firePoint.position,
-            firePoint.rotation
+            shotPosition,
+            shotRotation
         );
 
         projectile.SetTarget(
@@ -276,24 +284,33 @@ public class TowerTargeting : MonoBehaviour {
 
         if (towerData.AttackData is CannonAttackData)
         {
-            cannonRecoilFeedbacks?.PlayFeedbacks(firePoint.position);
+            cannonRecoilFeedbacks?.PlayFeedbacks(shotPosition);
             TowerAttackVfx.PlayCannonMuzzleFlash(
-                firePoint.position,
-                firePoint.forward
+                shotPosition,
+                shotRotation * Vector3.forward
             );
         }
 
         if (towerData.AttackData is LightningAttackData)
         {
-            lightningSurgeFeedbacks?.PlayFeedbacks(firePoint.position);
+            lightningSurgeFeedbacks?.PlayFeedbacks(shotPosition);
             TowerAttackVfx.PlayLightningMuzzleFlash(
-                firePoint.position,
-                firePoint.forward
+                shotPosition,
+                shotRotation * Vector3.forward
             );
         }
 
-        TowerAttackAudio.PlayShot(towerData.AttackData, firePoint.position);
+        TowerAttackAudio.PlayShot(towerData.AttackData, shotPosition);
     }
+
+    private static bool IsFinite(Vector3 value) =>
+        IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+
+    private static bool IsFinite(Quaternion value) =>
+        IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z) && IsFinite(value.w);
+
+    private static bool IsFinite(float value) =>
+        !float.IsNaN(value) && !float.IsInfinity(value);
 
     private void OnDrawGizmosSelected()
     {

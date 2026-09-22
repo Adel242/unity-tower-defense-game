@@ -82,7 +82,7 @@ public class DamagePopup : MonoBehaviour{
             return;
         }
 
-        damageText.text = $"-{Mathf.RoundToInt(damage)}";
+        damageText.text = $"{Mathf.RoundToInt(damage)}";
         horizontalSpeed = Random.Range(-horizontalSpread, horizontalSpread);
 
         bool isStrongHit = damage >= strongHitThreshold;

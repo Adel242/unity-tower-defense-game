@@ -46,6 +46,8 @@ public sealed class RunUpgradeState
     }
 
     public bool Choosing { get; set; }
+    public int RerollsUsed { get; private set; }
+    public int RerollCost => (int)System.Math.Min(int.MaxValue, 30L + 15L * RerollsUsed);
     public int ClosedFrame { get; private set; } = -1;
     public bool BlocksInput => Choosing || ClosedFrame == Time.frameCount;
     public event System.Action Changed;
@@ -80,18 +82,41 @@ public sealed class RunUpgradeState
             Family = family, Amount = amount, Limit = limit });
     }
 
-    public Choice[] Draw()
+    public Choice[] Draw(Choice[] excluded = null)
     {
-        var available = catalog.FindAll(choice => choice.Stacks < choice.Limit);
+        var available = catalog.FindAll(choice => choice.Stacks < choice.Limit &&
+            (excluded == null || System.Array.IndexOf(excluded, choice) < 0));
+        int freshCount = available.Count;
+        // Near exhaustion keep three options when possible, but prefer fresh ones.
+        if (available.Count < 3 && excluded != null)
+            foreach (Choice oldChoice in excluded)
+                if (catalog.Contains(oldChoice) && oldChoice.Stacks < oldChoice.Limit && !available.Contains(oldChoice))
+                    available.Add(oldChoice);
         int count = Mathf.Min(3, available.Count);
         var result = new Choice[count];
         for (int i = 0; i < count; i++)
         {
-            int index = Random.Range(0, available.Count);
+            int index = Random.Range(0, i == 0 && freshCount > 0 ? freshCount : available.Count);
             result[i] = available[index];
             available.RemoveAt(index);
         }
         return result;
+    }
+
+    public bool CanReroll(Choice[] previous) => Choosing && previous != null &&
+        catalog.Exists(choice => choice.Stacks < choice.Limit && System.Array.IndexOf(previous, choice) < 0);
+
+    public bool TryReroll(Choice[] previous, System.Func<int, bool> spendGold, out Choice[] replacement)
+    {
+        replacement = null;
+        if (!CanReroll(previous) || spendGold == null) return false;
+        // Draw before paying, and never charge for an unchanged set of choices.
+        Choice[] next = Draw(previous);
+        if (!System.Array.Exists(next, choice => System.Array.IndexOf(previous, choice) < 0)) return false;
+        if (!spendGold(RerollCost)) return false;
+        RerollsUsed++;
+        replacement = next;
+        return true;
     }
 
     public void Apply(Choice choice)

@@ -147,6 +147,12 @@ public class Projectile : MonoBehaviour{
     }
 
     public void ResetForPool(){
+        if (!IsFinite(transform.position) || !IsFinite(transform.rotation) ||
+            !IsFinite(transform.localScale)){
+            transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            transform.localScale = IsFinite(defaultScale) ? defaultScale : Vector3.one;
+        }
+
         target = null;
         lastTargetPosition = Vector3.zero;
         attackOrigin = Vector3.zero;
@@ -162,6 +168,15 @@ public class Projectile : MonoBehaviour{
         affectedEnemies = null;
         RestoreDefaultVisuals();
     }
+
+    private static bool IsFinite(Vector3 value) =>
+        IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+
+    private static bool IsFinite(Quaternion value) =>
+        IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z) && IsFinite(value.w);
+
+    private static bool IsFinite(float value) =>
+        !float.IsNaN(value) && !float.IsInfinity(value);
 
     private void SetNextTarget(Transform nextTarget){
         target = nextTarget;

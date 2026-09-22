@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Flame Tower
   damage: 2
-  range: 6
+  range: 7.5
   fireRate: 3
   rotationSpeed: 250
   searchRotationSpeed: 100

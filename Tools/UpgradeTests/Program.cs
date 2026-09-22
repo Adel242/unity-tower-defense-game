@@ -65,6 +65,41 @@ static class Program
         RunUpgradeState.Reset();
         Check(data.Damage == 10 && data.Cost == 100 && !RunUpgradeState.Current.Choosing,
             "New run resets modifiers and modal state");
+
+        state = RunUpgradeState.Current;
+        state.Choosing = true;
+        var previous = state.Draw();
+        int wallet = 100;
+        bool Pay(int amount){ if (wallet < amount) return false; wallet -= amount; return true; }
+        int firstCost = state.RerollCost;
+        bool firstRerolled = state.TryReroll(previous, Pay, out var fresh);
+        Check(firstCost == 30 && firstRerolled && wallet == 70,
+            "Reroll spends exactly 30 gold");
+        Check(fresh.Length == 3 && fresh.Distinct().Count() == 3 && !fresh.Intersect(previous).Any(),
+            "Reroll offers three new distinct choices");
+        int secondCost = state.RerollCost;
+        bool secondRerolled = state.TryReroll(fresh, Pay, out var second);
+        Check(state.Choosing && secondCost == 45 && secondRerolled && wallet == 25,
+            "Second reroll costs 45 and keeps draft open");
+        Check(!state.TryReroll(second, Pay, out _) && wallet == 25 && state.RerollCost == 60,
+            "Insufficient gold does not charge or increase price");
+        Pick(state, second[0]);
+        Check(!state.TryReroll(second, Pay, out _) && wallet == 25, "No reroll outside draft");
+        state.Choosing = true;
+        Check(state.RerollCost == 60, "Price persists into next draft");
+        var all = new HashSet<RunUpgradeState.Choice>();
+        for (int i = 0; i < 500; i++) foreach (var choice in state.Draw()) all.Add(choice);
+        var last = all.Take(4).ToArray();
+        foreach (var choice in all) if (!last.Contains(choice)) choice.Stacks = choice.Limit;
+        wallet = 1000;
+        Check(state.TryReroll(last.Take(3).ToArray(), Pay, out var nearEnd) && nearEnd.Contains(last[3]),
+            "Near exhaustion still guarantees a new option");
+        foreach (var choice in all) choice.Stacks = choice.Limit;
+        int unchangedWallet = wallet;
+        Check(!state.TryReroll(nearEnd, Pay, out _) && wallet == unchangedWallet,
+            "Exhausted catalog never charges gold");
+        RunUpgradeState.Reset();
+        Check(RunUpgradeState.Current.RerollCost == 30, "Reroll price resets with new run");
     }
 }
 public class TowerAttackData { }

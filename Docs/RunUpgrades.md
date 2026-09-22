@@ -1,6 +1,14 @@
-# Mejoras de partida — primera versión
+# Mejoras de partida
 
-Tres tarjetas aleatorias, sin duplicados en la misma oferta. Elegir exactamente una antes de iniciar la oleada 1 y al completar 5, 10, 15, 20 y cada múltiplo de 5 futuro. No se ofrecen antes de la 5: aparecen al terminarla. El temporizador de la próxima oleada empieza después de elegir. La oferta de la 20 se mantiene aunque actualmente sea la última.
+## Tarjetas y renovación
+
+Diseño oscuro con marcos dobles, ornamentos, seis ilustraciones góticas con cel shading suave (`Assets/Game/UI/UpgradeArt`) y textos TMP separados. Arte por familia; oro/descuentos usan Fortune. Todos los elementos visuales y el botón RENOVAR están serializados en `Game/Upgrade Selection Canvas`, editables fuera de Play. Los colores distinguen familias/economía, no rarezas. Prompts y procedencia: `Docs/UpgradeArtPrompts.md`.
+
+Renovar cuesta 30 de oro, luego 45, 60… (+15 por uso durante toda la partida). Reiniciar restablece el precio. El botón muestra coste y oro disponible y se desactiva sin fondos, durante animaciones o si no quedan alternativas. Se cobran fondos mediante PlayerGold.SpendGold; no se aplican mejoras al renovar. Se evitan las tres opciones anteriores cuando hay suficientes alternativas; cerca del límite se garantiza al menos una nueva sin duplicados. Sin alternativas no se cobra.
+
+La renovación reúne las tarjetas en el centro con giro, escala FEEL y desvanecimiento (0.48 s), seguido de entrada escalonada y pulso dorado breve (0.42 s). El botón tiene squash/rebote FEEL. No mueve la cámara ni altera el tiempo del juego; usa tiempo escalado para respetar pausa. Bloquea interacción hasta completar la secuencia. Hover con borde iluminado y elevación; confirmación con rebote/destello y salida animada de las alternativas. Pendiente comprobar visualmente en Play Mode, incluyendo doble clic, pausa durante renovación, coste persistente en la siguiente oferta y distintas resoluciones.
+
+Inicio: mensaje breve «Prepara tus defensas / Protege la base» durante 1.8 segundos, preparación libre para construir, pulsar Iniciar oleada, elegir una de tres mejoras y comienzo automático de la oleada 1. No aparecen tarjetas al entrar en la escena. Las ofertas posteriores siguen al completar 5, 10, 15, 20 y cada múltiplo de 5 futuro. El temporizador de la próxima oleada empieza después de elegir. La oferta de la 20 se mantiene aunque actualmente sea la última.
 
 ## Catálogo (25 opciones)
 
@@ -34,11 +42,15 @@ dotnet run --project Tools/UpgradeTests/UpgradeTests.csproj
 El arnés compila el TowerData.cs real con sustitutos mínimos de Unity; requiere SDK .NET 10. No sustituye pruebas del motor. Comprueba 25 opciones, 500 ofertas sin duplicados, límites, daño, cadencia, familia de área, rebotes, precio, doble selección, bloqueo del clic y reinicio. La advertencia de attackData sin asignar en este arnés es esperable: allí no existe serialización de Unity.
 
 Pendiente Play Mode:
-1. Iniciar Game: tres tarjetas y ningún enemigo hasta elegir e iniciar oleada.
+1. Iniciar Game: mensaje de misión, luego construir sin tarjetas; pulsar Iniciar oleada abre la primera elección. Confirmarla inicia enemigos sin un segundo clic.
 2. Elegir: aplicar una sola mejora, sin construir ni seleccionar detrás.
 3. Completar 5/10/15/20: oferta única; el contador no corre mientras se elige.
 4. Seleccionar descuento: coinciden coste en botón, panel, disponibilidad y descuento real de oro.
 5. Probar mejoras en torres nuevas y existentes; verificar visualmente área de fuego/cañón y cadenas de rayos.
 6. Pausar/reanudar durante oferta; probar ratón y navegación con teclado.
 7. Reiniciar escena: sin bonos heredados ni ofertas pendientes.
-8. Revisar tarjetas en distintas resoluciones. Diseño provisional, sin ilustraciones ni animaciones especiales.
+8. Revisar tarjetas en distintas resoluciones. Diseño con categoría, icono de torre, bonificación destacada, descripción y nivel; colores por familia/economía, entrada escalonada, hover/foco y pulso al confirmar. Tarjetas editables en Game.
+
+FEEL (MMF_Player y MMF_Scale) controla entrada escalonada, foco, salida del foco, confirmación y aparición del título de misión. Curvas absolutas evitan acumular escala; cada cambio detiene feedbacks previos sobre la misma tarjeta. Cada reproductor ocupa su propio objeto hijo de WaveManager porque MMF_Player usa DisallowMultipleComponent; los objetos de las tarjetas siguen guardados en escena.
+
+La entrada bloquea interacción durante 0.4 segundos, sin foco automático. Tab o flechas activan navegación; mover el ratón elimina el foco persistente. Outline y marcos iluminan el borde con el color de su mejora. La confirmación retira las alternativas con giro, desplazamiento y desvanecimiento; anima la elegida durante 0.6 segundos con FEEL antes de aplicar la elección. Outline y CanvasGroup se añaden una sola vez a las tarjetas existentes. Animaciones y confirmación respetan pausa. La misión reutiliza el título del Canvas y restaura tamaño/posición al terminar.
