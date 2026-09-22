@@ -106,7 +106,8 @@ public class TowerPlacementManager : MonoBehaviour{
         }
 
         isBuildMode = true;
-        towerPreview.SetActive(true);
+        // Keep it hidden until the pointer is over a valid construction cell.
+        towerPreview.SetActive(false);
         constructionGrid?.Show();
     }
 
@@ -302,10 +303,20 @@ public class TowerPlacementManager : MonoBehaviour{
     }
 
     private void UpdatePreviewMaterial(){
-        Material materialToUse =
-            canPlaceTower
-                ? validPreviewMaterial
-                : invalidPreviewMaterial;
+        if (towerPreview == null){
+            return;
+        }
+
+        // Invalid cells are already communicated by the construction grid.
+        // Hiding the ghost also prevents a red preview from covering the tower
+        // and its placement animation immediately after construction.
+        towerPreview.SetActive(canPlaceTower);
+
+        if (!canPlaceTower){
+            return;
+        }
+
+        Material materialToUse = validPreviewMaterial;
 
         if (materialToUse == null){
             return;
@@ -341,6 +352,10 @@ public class TowerPlacementManager : MonoBehaviour{
             placementPosition,
             towerPrefab.transform.rotation
         );
+
+        // The occupied cell becomes invalid after Refresh(), but hide the
+        // preview in this same frame so the creation feedback stays visible.
+        towerPreview.SetActive(false);
 
         PlayPlacementFeedback(placedTower);
         TowerAttackAudio.PlayPlacement(
