@@ -1,8 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class EnemyMovement : MonoBehaviour{
+    private static readonly List<EnemyMovement> activeEnemies = new();
+
     [SerializeField] private EnemyData enemyData;
     [SerializeField] private Transform visualRoot;
     [SerializeField] private Transform targetPoint;
@@ -10,6 +13,7 @@ public class EnemyMovement : MonoBehaviour{
     private bool hasDestination;
 
     public Transform TargetPoint => targetPoint;
+    public static IReadOnlyList<EnemyMovement> ActiveEnemies => activeEnemies;
 
     private NavMeshAgent agent;
     private BaseHealth playerBase;
@@ -28,6 +32,21 @@ private void Awake(){
 
     agent.updateRotation = true;
 }
+
+    private void OnEnable(){
+        if (!activeEnemies.Contains(this)){
+            activeEnemies.Add(this);
+        }
+    }
+
+    private void OnDisable(){
+        activeEnemies.Remove(this);
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetActiveEnemies(){
+        activeEnemies.Clear();
+    }
 
     private void Start(){
         playerBase = FindFirstObjectByType<BaseHealth>();
@@ -79,7 +98,7 @@ private void Awake(){
         reachedDestination = true;
 
         if (playerBase != null){
-            playerBase.TakeDamage(enemyData.baseDamage);
+            playerBase.TakeDamage(1f);
         }
         
         ReachedDestination?.Invoke(this);

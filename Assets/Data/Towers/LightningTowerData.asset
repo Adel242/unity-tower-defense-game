@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: LightningTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Lightning Tower
-  damage: 5
+  damage: 6
   range: 10
-  fireRate: 1.6
+  fireRate: 1.8
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20

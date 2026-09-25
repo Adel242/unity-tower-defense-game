@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: BasicTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Basic Tower
-  damage: 4
+  damage: 5
   range: 8
-  fireRate: 2
+  fireRate: 2.2
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20

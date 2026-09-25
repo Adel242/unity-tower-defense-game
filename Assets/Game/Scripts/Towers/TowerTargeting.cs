@@ -16,15 +16,13 @@ public class TowerTargeting : MonoBehaviour {
     private MMF_Player cannonRecoilFeedbacks;
     private MMF_Player lightningSurgeFeedbacks;
 
-    private void Awake()
-    {
+    private void Awake(){
         ConfigureSelectionCollider();
         ConfigureCannonRecoil();
         ConfigureLightningSurge();
     }
 
-    private void ConfigureCannonRecoil()
-    {
+    private void ConfigureCannonRecoil(){
         if (towerData == null ||
             !(towerData.AttackData is CannonAttackData) ||
             turretHead == null)
@@ -33,9 +31,6 @@ public class TowerTargeting : MonoBehaviour {
         }
 
         cannonRecoilFeedbacks = gameObject.AddComponent<MMF_Player>();
-        // Position springs can become numerically unstable after a long frame
-        // and send the imported model far outside valid world bounds. Keep the
-        // recoil visual bounded by animating scale only.
         cannonRecoilFeedbacks.AddFeedback(new MMF_Scale
         {
             AnimateScaleTarget = turretHead,
@@ -50,8 +45,7 @@ public class TowerTargeting : MonoBehaviour {
         cannonRecoilFeedbacks.Initialization();
     }
 
-    private void ConfigureLightningSurge()
-    {
+    private void ConfigureLightningSurge(){
         if (towerData == null ||
             !(towerData.AttackData is LightningAttackData) ||
             turretHead == null)
@@ -74,17 +68,14 @@ public class TowerTargeting : MonoBehaviour {
         lightningSurgeFeedbacks.Initialization();
     }
 
-    private void ConfigureSelectionCollider()
-    {
+    private void ConfigureSelectionCollider(){
         int turretLayer = LayerMask.NameToLayer("Turrets");
 
-        if (turretLayer >= 0)
-        {
+        if (turretLayer >= 0){
             gameObject.layer = turretLayer;
         }
 
-        if (TryGetComponent(out CapsuleCollider capsuleCollider))
-        {
+        if (TryGetComponent(out CapsuleCollider capsuleCollider)){
             capsuleCollider.center = new Vector3(0f, 1.8f, 0f);
             capsuleCollider.radius = 1.5f;
             capsuleCollider.height = 4.8f;
@@ -97,53 +88,39 @@ public class TowerTargeting : MonoBehaviour {
         collider.height = 4.8f;
     }
 
-    private void OnEnable()
-    {
-        if (turretHead != null)
-        {
+    private void OnEnable(){
+        if (turretHead != null){
             currentYaw = turretHead.eulerAngles.y;
         }
     }
 
-    // Apply aiming after Animator updates the imported tower bones.
-    private void LateUpdate()
-    {
-        if (towerData == null || turretHead == null || firePoint == null || projectilePrefab == null)
-        {
+    private void LateUpdate(){
+        if (towerData == null || turretHead == null || firePoint == null || projectilePrefab == null){
             return;
         }
 
-        // Cadence belongs to the tower, not to its current target. A projectile
-        // whose victim dies in flight must still consume the full cooldown.
         fireCooldown = Mathf.Max(0f, fireCooldown - Time.deltaTime);
         UpdateTarget();
 
-        if (target != null)
-        {
-            if (rotateTurret)
-            {
+        if (target != null){
+            if (rotateTurret){
                 RotateTowardsTarget();
             }
 
-            if (!rotateTurret || IsAimingAtTarget())
-            {
+            if (!rotateTurret || IsAimingAtTarget()){
                 HandleShooting();
             }
         }
-        else if (rotateTurret)
-        {
+        else if (rotateTurret){
             SearchForEnemies();
         }
     }
 
-    private void UpdateTarget()
-    {
-        if (target != null && targetRoot != null)
-        {
+    private void UpdateTarget(){
+        if (target != null && targetRoot != null){
             float currentTargetDistance = HorizontalDistance(targetRoot.position);
 
-            if (currentTargetDistance <= towerData.Range)
-            {
+            if (currentTargetDistance <= towerData.Range){
                 return;
             }
 
@@ -151,13 +128,12 @@ public class TowerTargeting : MonoBehaviour {
             targetRoot = null;
         }
 
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-
         float closestDistance = Mathf.Infinity;
-        GameObject closestEnemy = null;
-
-        foreach (GameObject enemy in enemies)
-        {
+        EnemyMovement closestEnemy = null;
+        var activeEnemies = EnemyMovement.ActiveEnemies;
+        for (int index = activeEnemies.Count - 1; index >= 0; index--){
+            EnemyMovement enemy = activeEnemies[index];
+            if (enemy == null || !enemy.isActiveAndEnabled){ continue; }
             float distance = HorizontalDistance(enemy.transform.position);
 
             if (distance < closestDistance && distance <= towerData.Range)
@@ -167,17 +143,10 @@ public class TowerTargeting : MonoBehaviour {
             }
         }
 
-        if (closestEnemy != null)
-        {
-            EnemyMovement enemyMovement =
-                closestEnemy.GetComponent<EnemyMovement>();
-
-            if (enemyMovement != null && enemyMovement.TargetPoint != null)
-            {
-                target = enemyMovement.TargetPoint;
+        if (closestEnemy != null){
+            if (closestEnemy.TargetPoint != null){
+                target = closestEnemy.TargetPoint;
                 targetRoot = closestEnemy.transform;
-                // Acquiring another enemy may add the aiming delay, but must
-                // never shorten cooldown left by the previous shot.
                 fireCooldown = Mathf.Max(
                     fireCooldown,
                     towerData.firstShotDelay
@@ -186,8 +155,7 @@ public class TowerTargeting : MonoBehaviour {
         }
     }
 
-    private void RotateTowardsTarget()
-    {
+    private void RotateTowardsTarget(){
         Vector3 direction = target.position - turretHead.position;
         direction.y = 0f;
 
@@ -207,15 +175,13 @@ public class TowerTargeting : MonoBehaviour {
         turretHead.rotation = Quaternion.Euler(0f, currentYaw, 0f);
     }
 
-    private float HorizontalDistance(Vector3 position)
-    {
+    private float HorizontalDistance(Vector3 position){
         Vector3 offset = position - transform.position;
         offset.y = 0f;
         return offset.magnitude;
     }
 
-    private bool IsAimingAtTarget()
-    {
+    private bool IsAimingAtTarget(){
         Vector3 directionToTarget = target.position - turretHead.position;
         directionToTarget.y = 0f;
 
@@ -232,10 +198,8 @@ public class TowerTargeting : MonoBehaviour {
         turretHead.rotation = Quaternion.Euler(0f, currentYaw, 0f);
     }
 
-    private void HandleShooting()
-    {
-        if (fireCooldown <= 0f)
-        {
+    private void HandleShooting(){
+        if (fireCooldown <= 0f){
             Shoot();
             fireCooldown = 1f / towerData.FireRate;
         }
@@ -256,7 +220,6 @@ public class TowerTargeting : MonoBehaviour {
         );
 
         if (towerData.AttackData is FlameAttackData flame && targetRoot != null){
-            // A flame pulse is an area attack, not a delayed homing projectile.
             flame.FireCone(transform.position, shotPosition,
                 targetRoot.position, towerData.Range, shotDamage);
             TowerAttackAudio.PlayShot(flame, shotPosition);
@@ -277,8 +240,7 @@ public class TowerTargeting : MonoBehaviour {
             towerData.AttackData
         );
 
-        if (towerData.AttackData is CannonAttackData)
-        {
+        if (towerData.AttackData is CannonAttackData){
             cannonRecoilFeedbacks?.PlayFeedbacks(shotPosition);
             TowerAttackVfx.PlayCannonMuzzleFlash(
                 shotPosition,
@@ -286,8 +248,7 @@ public class TowerTargeting : MonoBehaviour {
             );
         }
 
-        if (towerData.AttackData is LightningAttackData)
-        {
+        if (towerData.AttackData is LightningAttackData){
             lightningSurgeFeedbacks?.PlayFeedbacks(shotPosition);
             TowerAttackVfx.PlayLightningMuzzleFlash(
                 shotPosition,
@@ -307,10 +268,8 @@ public class TowerTargeting : MonoBehaviour {
     private static bool IsFinite(float value) =>
         !float.IsNaN(value) && !float.IsInfinity(value);
 
-    private void OnDrawGizmosSelected()
-    {
-        if (towerData == null)
-        {
+    private void OnDrawGizmosSelected(){
+        if (towerData == null){
             return;
         }
 

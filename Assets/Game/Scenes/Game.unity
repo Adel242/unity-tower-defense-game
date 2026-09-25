@@ -211,16 +211,26 @@ MonoBehaviour:
   enemySpawner: {fileID: 1793314429}
   timeBetweenWaves: 10
   enemyPrefab: {fileID: 4663588816647234693, guid: 0764cf17c5c8c2c4badad5f2a5a698be, type: 3}
-  baseEnemyCount: 15
-  enemiesAddedPerWave: 2.25
-  initialSpawnInterval: 1.12
-  minimumSpawnInterval: 0.14
-  spawnIntervalDecay: 0.965
-  initialHealthMultiplier: 0.6
-  healthGrowthPerWave: 1.115
+  baseEnemyCount: 32
+  enemiesAddedPerWave: 4
+  enemyCountVariance: 0.14
+  swarmCountMultiplier: 1.45
+  fastCountMultiplier: 1.15
+  specialCountMultiplier: 0.82
+  baseSpawnBatchSize: 2
+  initialSpawnInterval: 0.55
+  minimumSpawnInterval: 0.08
+  spawnIntervalDecay: 0.96
+  initialHealthMultiplier: 0.4
+  healthGrowthPerWave: 1.085
+  swarmHealthMultiplier: 0.85
+  fastHealthMultiplier: 0.9
   maximumHealthMultiplier: 1000000
-  speedAddedPerWave: 0.015
-  maximumSpeedMultiplier: 1.9
+  speedAddedPerWave: 0.012
+  maximumSpeedMultiplier: 1.75
+  initialGoldRewardMultiplier: 0.5
+  rewardGrowthEveryFiveWaves: 0.025
+  specialRewardMultiplier: 1.1
   upgradePanel: {fileID: 2200010000}
   upgradeButtons:
   - {fileID: 2200010204}
@@ -875,13 +885,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60e12c586e9747c3974754b952b9e515, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TowerSelectionManager
-  destructionComputeShader: {fileID: 7200000, guid: 464b4875e5462c0468b8372c24d8c021, type: 3}
-  destructionShader: {fileID: 4800000, guid: fc69ed8e390e936458a28219f93e6046, type: 3}
-  destructionParticles: {fileID: 7074040711308098837, guid: fac253c45a46001458eda61bab5ede26, type: 3}
-  destructionSound: {fileID: 0}
-  enemyDestructionChance: 0.22
-  maxConcurrentEnemyDestructions: 3
-  enemyDestructionMaxDistance: 32
 --- !u!4 &981393467
 Transform:
   m_ObjectHideFlags: 0
@@ -1366,7 +1369,7 @@ Transform:
   m_GameObject: {fileID: 1779995063}
   serializedVersion: 2
   m_LocalRotation: {x: 0.4266001, y: 0.3394444, z: -0.1767036, w: 0.8194911}
-  m_LocalPosition: {x: -17.56, y: 22, z: -22.56}
+  m_LocalPosition: {x: -19.316, y: 24.2, z: -24.816}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1488,7 +1491,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
   spawnZone: {fileID: 1426259665}
   destinationPoint: {fileID: 343056901}
-  minimumSpawnDistance: 1.5
+  minimumSpawnDistance: 0.3
 --- !u!1 &1859409233
 GameObject:
   m_ObjectHideFlags: 0

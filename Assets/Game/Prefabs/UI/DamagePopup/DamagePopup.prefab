@@ -131,6 +131,12 @@ MonoBehaviour:
   damageText: {fileID: 2864790269040153095}
   lifetime: 0.5
   moveSpeed: 1
+  spawnHorizontalSpread: 0.65
+  spawnVerticalSpread: 0.35
+  horizontalSpread: 0.35
+  strongHitThreshold: 20
+  normalHitColor: {r: 1, g: 0.94, b: 0.78, a: 1}
+  strongHitColor: {r: 1, g: 0.58, b: 0.08, a: 1}
 --- !u!1 &6821168464867291401
 GameObject:
   m_ObjectHideFlags: 0

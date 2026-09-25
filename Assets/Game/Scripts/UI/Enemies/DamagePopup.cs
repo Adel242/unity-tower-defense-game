@@ -6,6 +6,8 @@ public class DamagePopup : MonoBehaviour{
     [SerializeField] private TextMeshProUGUI damageText;
     [SerializeField] private float lifetime = 0.8f;
     [SerializeField] private float moveSpeed = 1.5f;
+    [SerializeField, Min(0f)] private float spawnHorizontalSpread = 0.65f;
+    [SerializeField, Min(0f)] private float spawnVerticalSpread = 0.35f;
     [SerializeField] private float horizontalSpread = 0.35f;
     [SerializeField] private float strongHitThreshold = 20f;
     [SerializeField] private Color normalHitColor = new Color(1f, 0.94f, 0.78f, 1f);
@@ -82,6 +84,7 @@ public class DamagePopup : MonoBehaviour{
             return;
         }
 
+        ApplyRandomSpawnOffset();
         damageText.text = $"{Mathf.RoundToInt(damage)}";
         horizontalSpeed = Random.Range(-horizontalSpread, horizontalSpread);
 
@@ -93,6 +96,29 @@ public class DamagePopup : MonoBehaviour{
 
         transform.localScale = originalScale;
         appearanceFeedbacks?.PlayFeedbacks(transform.position);
+    }
+
+    private void ApplyRandomSpawnOffset(){
+        // Spread in camera space so the separation remains visible after the
+        // player rotates the battlefield. Vertical offset is always positive:
+        // damage numbers stay above the enemy instead of covering its body.
+        Camera gameplayCamera = Camera.main;
+        Vector3 horizontalDirection = gameplayCamera != null
+            ? gameplayCamera.transform.right
+            : Vector3.right;
+        horizontalDirection.y = 0f;
+        horizontalDirection.Normalize();
+
+        float horizontalOffset = Random.Range(
+            -spawnHorizontalSpread,
+            spawnHorizontalSpread
+        );
+        float verticalOffset = Random.Range(
+            spawnVerticalSpread * 0.2f,
+            spawnVerticalSpread
+        );
+        transform.position += horizontalDirection * horizontalOffset +
+                              Vector3.up * verticalOffset;
     }
 
     public void ResetForPool(){

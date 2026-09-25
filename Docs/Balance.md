@@ -1,61 +1,67 @@
-# Balance de torres y 20 oleadas — revisión de ritmo
+# Balance infinito de hordas
 
-Objetivo: construir con más frecuencia, con torres individualmente más débiles y más enemigos. Segunda pasada calculada a partir del feedback de juego; pendiente de validar una partida completa.
+Objetivo: muchas unidades visibles, aparición rápida, economía controlada y dificultad que finalmente supere al jugador. Es una aproximación calculada; requiere partida real y perfilado desde la oleada 30.
 
-## Economía y torres
+## Torres
 
-Se conservan 500 de oro iniciales. Ahora una torre de cada tipo cuesta 475 en total (antes 870), seis básicas + dos cañones cuestan 500, o diez básicas cuestan 500. No es necesario esperar varias oleadas para completar una defensa inicial variada.
+| Torre | Coste | Daño | Disparos/s | DPS individual | DPS con 4 objetivos |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Básica | 50 | 5 | 2,2 | 11 | 11 |
+| Cañón | 100 | 14 + 6 de área | 0,9 | 12,6 | 28,8 |
+| Rayos | 120 | 6 | 1,8 | 10,8 | 43,2 |
+| Fuego | 75 | 2,5 | 3,2 | 8 | 32 |
+| Arcana | 130 | 38 | 0,65 | 24,7 | 24,7 |
 
-| Torre | Precio anterior → actual | Daño anterior → actual | Disparos/s | Alcance | DPS individual | DPS total con 3 objetivos |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| Básica | 90 → 50 | 6 → 4 | 2 | 8 | 8 | 8 |
-| Cañón | 180 → 100 | 18 → 12 | 0.8 | 11 | 9.6 | 20.8 |
-| Rayos | 220 → 120 | 7 → 5 | 1.6 | 10 | 8 | 24 |
-| Fuego | 140 → 75 | 3 → 2 | 3 | 6 | 6 | 18 |
-| Arcana | 240 → 130 | 48 → 32 | 0.6 | 12 | 19.2 | 19.2 |
+Básica y arcana sostienen daño individual; cañón, rayos y fuego aprovechan los grupos. Los precios conservan varias opciones con los 500 de oro iniciales.
 
-Daño individual reducido un 29–33%; no se ralentiza la cadencia. Las torres cuestan aproximadamente un 44–46% menos. El DPS por oro mejora aproximadamente un 20–31%, a cambio de necesitar más casillas e inversión en colocación.
+## Generación infinita
 
-DPS teórico = daño × disparos/s. Las cifras múltiples requieren alcance, cono o rebotes efectivos; no incluyen giro, tiempo de proyectil, primer disparo, exceso de daño ni interrupciones.
+- La tendencia base parte en 32 y agrega 4 por oleada, pero no es la cantidad final: una oscilación determinista de ±14% y el tipo de oleada cambian cada resultado.
+- Aparecen en grupos de 2. Las hordas suman uno y el grupo base crece gradualmente hasta 5.
+- Cada tercera oleada es horda (x1,45 enemigos), cada cuarta no especial es rápida (x1,15) y cada quinta es élite (x0,82). Por eso una oleada posterior puede tener menos unidades que la anterior sin perder progresión.
+- El intervalo entre grupos comienza en 0,55 s, decae 4% por oleada y tiene mínimo de 0,08 s.
+- La vida comienza en 40 y crece 8,5% por oleada; las élites reciben 40% adicional. Las hordas conservan sus números pero tienen 85% de la vida normal; las rápidas tienen 90%. Esto suaviza picos entre hitos sin quitar la sensación de masa.
+- Velocidad máxima: x1,75. Cantidad máxima: 400; después continúa escalando la vida.
+- Recompensa inicial: x0,5 del oro base; +0,025 cada cinco oleadas y x1,1 para élites. El cañón tiene 6 de daño en área con radio 2,75.
 
-- Cañón: explosión secundaria de 10 → 7, radio 3.5 sin cambios. DPS sobre N enemigos = (12 + 7 × (N − 1)) × 0.8. El objetivo principal no recibe además daño de explosión.
-- Rayos: 5 × 1.6 × min(N, 4), máximo 32 DPS repartido.
-- Fuego: 2 × 3 × N; 6 por objetivo. Mantiene su cono y alcance corto.
-- Arcana: 32 por impacto, 19.2 DPS individual y alcance 12. Conserva su rol contra resistentes y cadencia lenta.
-- Arrow, asset antiguo fuera del menú: precio 75, daño 5, cadencia 2, alcance 12.
+| Oleada | Tipo | Enemigos | Grupo | Vida | Intervalo | Tiempo generando | Oro total |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | Normal | 32 | 2 | 40 | 0,550 s | 8,2 s | 128 |
+| 2 | Normal | 31 | 2 | 43 | 0,528 s | 7,9 s | 124 |
+| 3 | Horda | 55 | 3 | 40 | 0,406 s | 7,3 s | 220 |
+| 4 | Rápida | 56 | 2 | 46 | 0,487 s | 13,1 s | 224 |
+| 5 | Élite | 43 | 2 | 78 | 0,514 s | 10,8 s | 172 |
+| 6 | Horda | 70 | 3 | 51 | 0,359 s | 8,3 s | 280 |
+| 7 | Normal | 49 | 2 | 65 | 0,431 s | 10,3 s | 196 |
+| 8 | Rápida | 71 | 2 | 64 | 0,413 s | 14,5 s | 284 |
+| 9 | Horda | 106 | 3 | 65 | 0,317 s | 11,1 s | 424 |
+| 10 | Élite | 58 | 2 | 117 | 0,419 s | 11,7 s | 290 |
+| 15 | Élite | 69 | 3 | 175 | 0,342 s | 7,5 s | 345 |
+| 20 | Élite | 79 | 3 | 264 | 0,279 s | 7,2 s | 395 |
+| 25 | Élite | 90 | 4 | 397 | 0,227 s | 5 s | 450 |
+| 30 | Élite | 106 | 4 | 597 | 0,185 s | 4,8 s | 636 |
 
-## Oleadas
+Las oleadas se generan mucho antes, pero terminan solo cuando muere o llega a la base el último enemigo.
 
-Se mantienen las 20 referencias existentes, sus velocidades y recompensas por baja. Aumenta la cantidad aproximadamente un 25% (redondeada hacia arriba), y el intervalo disminuye un 20%. Así llegan más enemigos sin alargar de manera importante la generación de cada oleada.
+## Capacidad de defensa aproximada
 
-La vida adicional aumenta gradualmente: multiplicador sobre la revisión anterior = 1 + 0.25 × (oleada − 1) / 19, redondeando la vida final al entero más cercano. La primera conserva 60 de vida; la última pasa de 660 a 825.
+`AnalyzeBalance.ps1` suma oro inicial y recompensas de cada oleada. Supone que se invierte cerca del 90% al principio y que esa fracción desciende gradualmente al 60%; el resto queda de reserva. Divide el gasto entre básica/cañón/rayos/fuego/arcana en proporción 10/30/25/25/10. Calcula cantidad comprable según coste, con máximo hipotético de 100 torres útiles. El DPS considera daño y cadencia reales, daño de splash, rebotes y blancos dentro del cono. Estima el número de blancos a partir de grupos, intervalo de aparición, velocidad, radio y ángulo. Aplica 65% de cobertura efectiva (torres disparando), +2,5% de daño medio cada cinco oleadas por mejoras, y un recorrido supuesto de 60 unidades.
 
-| Oleada | Enemigos | Vida | Velocidad × | Intervalo (s) | Oro por baja | Oro total |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | 15 | 60 | 1 | 1.12 | 8 | 120 |
-| 2 | 18 | 71 | 1 | 1 | 8 | 144 |
-| 3 | 20 | 82 | 1.12 | 0.96 | 8 | 160 |
-| 4 | 23 | 94 | 1 | 0.88 | 8 | 184 |
-| 5 | 20 | 163 | 0.9 | 1.08 | 12 | 240 |
-| 6 | 25 | 128 | 1.03 | 0.84 | 9 | 225 |
-| 7 | 28 | 156 | 1.05 | 0.8 | 9 | 252 |
-| 8 | 30 | 180 | 1.06 | 0.76 | 9 | 270 |
-| 9 | 28 | 166 | 1.32 | 0.72 | 9 | 252 |
-| 10 | 30 | 313 | 0.95 | 0.92 | 14 | 420 |
-| 11 | 33 | 232 | 1.08 | 0.76 | 10 | 330 |
-| 12 | 35 | 263 | 1.1 | 0.72 | 10 | 350 |
-| 13 | 38 | 318 | 1.1 | 0.68 | 10 | 380 |
-| 14 | 35 | 304 | 1.4 | 0.68 | 10 | 350 |
-| 15 | 38 | 527 | 1 | 0.88 | 16 | 608 |
-| 16 | 40 | 401 | 1.12 | 0.68 | 11 | 440 |
-| 17 | 43 | 460 | 1.15 | 0.68 | 11 | 473 |
-| 18 | 45 | 538 | 1.18 | 0.64 | 11 | 495 |
-| 19 | 40 | 507 | 1.45 | 0.64 | 11 | 440 |
-| 20 | 50 | 825 | 1.1 | 0.8 | 20 | 1000 |
+| Oleada | Oro acumulado antes | Reserva supuesta | Torres útiles | Vida del grupo | DPS efectivo | Tiempo para eliminar | Ventana disponible | Presión |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 500 | 50 | 5 | 1.280 | 54 | 23,8 s | 38,2 s | 0,62 |
+| 10 | 2.552 | 772 | 20 | 6.768 | 237 | 28,5 s | 41,2 s | 0,69 |
+| 15 | 4.222 | 1.469 | 31 | 12.107 | 477 | 25,4 s | 35,4 s | 0,72 |
+| 20 | 6.877 | 2.559 | 48 | 20.844 | 830 | 25,1 s | 33,8 s | 0,74 |
+| 25 | 10.182 | 3.921 | 70 | 35.706 | 1.497 | 23,9 s | 30,3 s | 0,79 |
+| 30 | 13.907 | 5.452 | 95 | 63.235 | 2.214 | 28,6 s | 29,0 s | 0,98 |
+| 35 | 18.243 | 7.219 | 100 | 114.818 | 2.559 | 44,9 s | 27,8 s | 1,61 |
 
-La primera oleada entrega 120: dos básicas, un cañón o una eléctrica. Las oleadas 5/10/15/20 mantienen los picos de resistencia; 9/14/19 son rápidas, con introducción suave en la 3. No se agregan jefes ni grupos mixtos.
+Presión = tiempo estimado para eliminar / ventana disponible. Más de 1 sugiere fugas en esta composición, pero **no equivale a probabilidad de victoria**. La reserva cercana a 4.000 en la 25 es una hipótesis basada en la partida reportada, no un límite impuesto al jugador. La cantidad máxima de torres, cobertura, longitud del camino, mejoras y composición son supuestos: falta medirlos en Play Mode. Tampoco se simulan selección de objetivos, sobre-daño, zonas sin cobertura, coste de rerolls, oro perdido por fugas o mejoras concretas. Con solo 60 torres útiles, la presión estimada cambia a 0,92 en la 25 y 1,55 en la 30. Los tipos de oleada producen variaciones locales: la horda 24 ronda 0,97, la 25 ronda 0,79 y la horda 27 ronda 1,07 en el escenario base. La curva se evalúa por tendencia, no por monotonía estricta.
 
-Recompensa zombie base: 8. Oro acumulado antes de la última oleada: 6633; total final: 7633, ambos incluyen 500 iniciales y suponen todas las bajas. Son presupuestos de inversión históricos, no saldo sin gastar. Se mantienen vida de base 100 y descanso de 10 segundos.
+## Rendimiento
+
+`EnemyMovement` mantiene el registro activo usado por targeting y ataques de área. El spawner usa `Physics.CheckSphere` sin crear arrays. Los enemigos todavía usan Instantiate/Destroy; agregar pooling requiere primero medir CPU y memoria en una partida representativa.
 
 ## Análisis reproducible
 
@@ -63,36 +69,8 @@ Recompensa zombie base: 8. Oro acumulado antes de la última oleada: 6633; total
 powershell -NoProfile -ExecutionPolicy Bypass -File Tools/AnalyzeBalance.ps1
 ```
 
-Lee los assets, verifica las 20 referencias ordenadas y calcula DPS, economía y una presión orientativa:
+Lee escena y assets, reproduce las reglas infinitas y muestra oleadas 1–10 y cada múltiplo de 5. Usa `-ShowAllWaves` para ver cada oleada. Parámetros opcionales: `-MaxWave`, `-EarlySpendFraction`, `-LateSpendFraction`, `-MaxTowers`, `-Coverage` y `-PathLength`.
 
-- Generación = cantidad × intervalo; el spawner espera después de cada aparición, incluida la última.
-- DPS requerido = vida total / (generación + 12 / velocidad).
-- Capacidad = oro acumulado previo × 0.12 DPS efectivo/oro.
-- Presión = requerido / capacidad.
+## Prueba pendiente
 
-El factor efectivo pasa de 0.10 a 0.12 para reflejar conservadoramente la mejora del DPS/oro. Los 12 segundos de exposición son una suposición, no una medición. El modelo no simula combate ni geometría, supone reinvertir todo el dinero y omite sobrantes, fugas, congestión de spawn y cobertura simultánea. No prueba que el juego sea ganable.
-
-Presión orientativa: 0.521 inicial; especiales 0.702 / 0.829 / 0.879 / 1.018. Con eficiencia 0.09, la última sube a 1.357; con 0.15 baja a 0.814. La última queda exigente, pendiente de prueba real.
-
-## Bug de casillas adyacentes
-
-Evidencia estática: TowerTargeting.ConfigureSelectionCollider configura una cápsula de radio 1.5, las casillas miden 2, y la colocación añadía una consulta esférica de radio 1. Los volúmenes de selección podían solaparse con casillas vecinas. La visualización usaba otra esfera, de radio 0.76, por lo que tampoco compartía exactamente la misma validación.
-
-Corrección: ConstructionGrid conserva un conjunto de coordenadas ocupadas por torres activas y lo actualiza al mostrar la cuadrícula y después de construir. Tanto dibujo como colocación consultan el mismo conjunto, sin usar colliders de selección. El preview (targeting desactivado) queda excluido. Se mantienen las comprobaciones de soporte y terreno bloqueado. Se elimina minimumTurretDistance, ya sustituido por la ocupación de casillas. No se cambian colliders de selección.
-
-Límite: las torres de este sistema ocupan una casilla; no se implementan edificios multicasilla. Si se agrega venta/movimiento/desactivación de torres durante construcción en el futuro, esa operación debe refrescar la cuadrícula.
-
-## Verificación
-
-Analizador de las 20 oleadas ejecutado correctamente. Compilación C# mediante dotnet; no se ha reproducido la interacción en Play Mode.
-
-Prueba manual pendiente:
-1. Iniciar Game y construir una básica en una casilla interior con vecinos soportados.
-2. Construir en cada vecino cardinal y diagonal: deben seguir libres y permitir construir, incluso inmediatamente después de la animación.
-3. Intentar construir dos veces en la misma casilla: debe rechazarse y no descontar oro.
-4. Cambiar de torre, cancelar y volver a construir: el preview no debe reservar casillas.
-5. Verificar bordes del terreno y camino: siguen rechazados cuando falta soporte.
-6. Confirmar selección por click, cancelación al quedarse sin oro y ocupación al reiniciar escena.
-7. Jugar las 20 oleadas y registrar vida, saldo y compras en 5/10/15/20 con composiciones variadas.
-
-Se conserva la corrección anterior de EnemyHealth que impide recompensar varias veces una muerte por impactos en el mismo frame.
+Jugar hasta la oleada 30 con composiciones distintas. Registrar oro sobrante, enemigos simultáneos, duración real de cada oleada, vida perdida y tiempos de frame en 10/20/30.

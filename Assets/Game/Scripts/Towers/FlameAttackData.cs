@@ -34,12 +34,15 @@ public class FlameAttackData : TowerAttackData
         forward.y = 0f;
         if (forward.sqrMagnitude < 0.0001f || range <= 0f) return;
 
-        foreach (GameObject enemy in GameObject.FindGameObjectsWithTag("Enemy"))
+        var activeEnemies = EnemyMovement.ActiveEnemies;
+        for (int index = activeEnemies.Count - 1; index >= 0; index--)
         {
-            if ((enemyLayer.value & (1 << enemy.layer)) == 0) continue;
+            EnemyMovement enemy = activeEnemies[index];
+            if (enemy == null || !enemy.isActiveAndEnabled) continue;
+            if ((enemyLayer.value & (1 << enemy.gameObject.layer)) == 0) continue;
             Vector3 direction = enemy.transform.position - attackOrigin;
             direction.y = 0f;
-            EnemyHealth health = enemy.GetComponentInParent<EnemyHealth>();
+            EnemyHealth health = enemy.GetComponent<EnemyHealth>();
 
             if (health != null && direction.magnitude <= range &&
                 Vector3.Angle(forward, direction) <= effectiveAngle * 0.5f &&

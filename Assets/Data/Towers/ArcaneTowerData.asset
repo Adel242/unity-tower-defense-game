@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: ArcaneTowerData
   m_EditorClassIdentifier: Assembly-CSharp::TowerData
   towerName: Arcane Tower
-  damage: 32
+  damage: 38
   range: 12
-  fireRate: 0.6
+  fireRate: 0.65
   rotationSpeed: 250
   searchRotationSpeed: 100
   aimTolerance: 20

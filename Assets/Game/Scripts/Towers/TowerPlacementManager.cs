@@ -1,6 +1,7 @@
 using MoreMountains.Feedbacks;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 public class TowerPlacementManager : MonoBehaviour{
     [SerializeField] private Camera mainCamera;
@@ -15,6 +16,8 @@ public class TowerPlacementManager : MonoBehaviour{
 
     [SerializeField] private Material validPreviewMaterial;
     [SerializeField] private Material invalidPreviewMaterial;
+    [SerializeField, Min(0f)] private float invalidPreviewDelayAfterPlacement = 0.38f;
+    private float invalidPreviewHiddenUntil;
     [SerializeField] private AudioClip placementSound;
     [SerializeField, Range(0f, 1f)] private float placementSoundVolume = 0.35f;
 
@@ -106,7 +109,7 @@ public class TowerPlacementManager : MonoBehaviour{
         }
 
         isBuildMode = true;
-        // Keep it hidden until the pointer is over a valid construction cell.
+        invalidPreviewHiddenUntil = 0f;
         towerPreview.SetActive(false);
         constructionGrid?.Show();
     }
@@ -141,6 +144,11 @@ public class TowerPlacementManager : MonoBehaviour{
     }
 
     private void UpdatePreview(){
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()){
+            canPlaceTower = false;
+            towerPreview.SetActive(false);
+            return;
+        }
         Vector2 mousePosition = Mouse.current.position.ReadValue();
 
         Ray ray = mainCamera.ScreenPointToRay(mousePosition);
@@ -151,6 +159,14 @@ public class TowerPlacementManager : MonoBehaviour{
             1000f,
             placementSurfaceLayer
         )){
+            // Keep the ghost under the cursor even over water or empty space.
+            Plane previewPlane = new Plane(Vector3.up, new Vector3(0f, placementPosition.y, 0f));
+            if (!previewPlane.Raycast(ray, out float distance)){
+                canPlaceTower = false;
+                towerPreview.SetActive(false);
+                return;
+            }
+            towerPreview.transform.position = ray.GetPoint(distance);
             canPlaceTower = false;
             UpdatePreviewMaterial();
             return;
@@ -158,7 +174,7 @@ public class TowerPlacementManager : MonoBehaviour{
 
         if (
             constructionGrid == null ||
-            !constructionGrid.TrySnap(hit.point, out placementPosition)
+            !constructionGrid.TrySnap(hit.point, out Vector3 snappedPosition)
         ){
             placementPosition = hit.point;
             towerPreview.transform.position = placementPosition;
@@ -168,19 +184,16 @@ public class TowerPlacementManager : MonoBehaviour{
             return;
         }
 
-        towerPreview.SetActive(true);
-        towerPreview.transform.position = placementPosition;
-
         bool isOnBlockedArea = Physics.CheckSphere(
-            placementPosition,
+            snappedPosition,
             0.3f,
             blockedLayer
         );
 
-        bool isNearTurret = constructionGrid.IsCellOccupied(placementPosition);
+        bool isNearTurret = constructionGrid.IsCellOccupied(snappedPosition);
 
         bool hasEnoughGold = HasEnoughGold();
-        bool isFullySupported = IsFootprintFullySupported(placementPosition);
+        bool isFullySupported = IsFootprintFullySupported(snappedPosition);
 
         canPlaceTower =
             !isOnBlockedArea &&
@@ -188,6 +201,10 @@ public class TowerPlacementManager : MonoBehaviour{
             hasEnoughGold &&
             isFullySupported;
 
+        // Only a valid cell attracts the preview. On occupied or otherwise
+        // invalid cells the red ghost follows the pointer without snapping.
+        placementPosition = canPlaceTower ? snappedPosition : hit.point;
+        towerPreview.transform.position = placementPosition;
         UpdatePreviewMaterial();
     }
 
@@ -311,16 +328,8 @@ public class TowerPlacementManager : MonoBehaviour{
             return;
         }
 
-        // Invalid cells are already communicated by the construction grid.
-        // Hiding the ghost also prevents a red preview from covering the tower
-        // and its placement animation immediately after construction.
-        towerPreview.SetActive(canPlaceTower);
-
-        if (!canPlaceTower){
-            return;
-        }
-
-        Material materialToUse = validPreviewMaterial;
+        towerPreview.SetActive(canPlaceTower || Time.unscaledTime >= invalidPreviewHiddenUntil);
+        Material materialToUse = canPlaceTower ? validPreviewMaterial : invalidPreviewMaterial;
 
         if (materialToUse == null){
             return;
@@ -350,6 +359,7 @@ public class TowerPlacementManager : MonoBehaviour{
         }
 
         ConsumedPlacementClickThisFrame = true;
+        invalidPreviewHiddenUntil = Time.unscaledTime + invalidPreviewDelayAfterPlacement;
 
         GameObject placedTower = Instantiate(
             towerPrefab,

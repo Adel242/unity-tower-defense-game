@@ -1,4 +1,5 @@
-using InstantDestruction;
+using TMPro;
+using MoreMountains.Feedbacks;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,15 +8,6 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public class TowerSelectionManager : MonoBehaviour{
-    [Header("Tower sale destruction")]
-    [SerializeField] private ComputeShader destructionComputeShader;
-    [SerializeField] private Shader destructionShader;
-    [SerializeField] private ParticleSystem destructionParticles;
-    [SerializeField] private AudioClip destructionSound;
-    [SerializeField, Range(0f, 1f)] private float enemyDestructionChance = 0.22f;
-    [SerializeField, Min(1)] private int maxConcurrentEnemyDestructions = 3;
-    [SerializeField, Min(1f)] private float enemyDestructionMaxDistance = 32f;
-
     private Camera mainCamera;
     private TowerPlacementManager placementManager;
     private TowerInfoPanel infoPanel;
@@ -24,18 +16,6 @@ public class TowerSelectionManager : MonoBehaviour{
     private TowerTargeting selectedTower;
     private LineRenderer selectionIndicator;
     private Mesh selectionMesh;
-
-    private void Awake(){
-        TowerDestructionEffect.ConfigureSharedResources(
-            destructionComputeShader,
-            destructionShader,
-            destructionParticles,
-            destructionSound,
-            enemyDestructionChance,
-            maxConcurrentEnemyDestructions,
-            enemyDestructionMaxDistance
-        );
-    }
 
     private void OnDestroy(){
         if (selectionMesh != null) Destroy(selectionMesh);
@@ -312,7 +292,7 @@ public class TowerSelectionManager : MonoBehaviour{
 
         SelectTower(null);
         playerGold.AddGold(refund);
-        placementManager?.RefreshConstructionGrid();
+
 
         GameObject soldTowerRoot = placementRoot != null
             ? placementRoot.gameObject
@@ -324,17 +304,8 @@ public class TowerSelectionManager : MonoBehaviour{
             towerCollider.enabled = false;
         }
 
-        bool destructionStarted = TowerDestructionEffect.Play(
-            soldTowerRoot,
-            destructionComputeShader,
-            destructionShader,
-            destructionParticles,
-            destructionSound
-        );
-
-        if (!destructionStarted){
-            Destroy(soldTowerRoot);
-        }
+        placementManager?.RefreshConstructionGrid();
+        TowerSaleEffect.Play(soldTowerRoot, towerToSell.TowerData.AttackData, refund);
     }
 
     private void UpdateSelectionIndicator(){
@@ -383,261 +354,126 @@ public class TowerSelectionManager : MonoBehaviour{
     }
 }
 
-public sealed class TowerDestructionEffect : BaseDestruction{
-    private const float EffectLifetime = 1.5f;
 
-    private static ComputeShader sharedComputeShader;
-    private static Shader sharedDestructionShader;
-    private static ParticleSystem sharedParticlePrefab;
-    private static AudioClip sharedDestructionClip;
-    private static int activeEnemyEffects;
-    private static float enemyEffectChance = 0.22f;
-    private static int maxConcurrentEnemyEffects = 3;
-    private static float enemyEffectMaxDistance = 32f;
+public sealed class TowerSaleEffect : MonoBehaviour{
+    private GameObject visualRoot;
+    private Material effectMaterial;
 
-    protected override string GuidComputeShader => string.Empty;
-    protected override string GuidShader => string.Empty;
-    protected override string GuidParticle => string.Empty;
-    protected override string GuidAudioClip => string.Empty;
-
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    private static void ResetRuntimeState(){
-        sharedComputeShader = null;
-        sharedDestructionShader = null;
-        sharedParticlePrefab = null;
-        sharedDestructionClip = null;
-        activeEnemyEffects = 0;
-    }
-
-    public static void ConfigureSharedResources(
-        ComputeShader computeShader,
-        Shader destructionShader,
-        ParticleSystem particlePrefab,
-        AudioClip destructionClip,
-        float enemyChance,
-        int maxEnemyEffects,
-        float enemyMaxDistance
-    ){
-        sharedComputeShader = computeShader;
-        sharedDestructionShader = destructionShader;
-        sharedParticlePrefab = particlePrefab;
-        sharedDestructionClip = destructionClip;
-        enemyEffectChance = Mathf.Clamp01(enemyChance);
-        maxConcurrentEnemyEffects = Mathf.Max(1, maxEnemyEffects);
-        enemyEffectMaxDistance = Mathf.Max(1f, enemyMaxDistance);
-    }
-
-    protected override void Start(){
-        base.Start();
-        if (destructionAudioClip == null){
-            audioSource = null;
+    public static void Play(GameObject tower, TowerAttackData attack, int refund){
+        foreach (MMF_Player feedback in tower.GetComponentsInChildren<MMF_Player>()){
+            feedback.StopFeedbacks();
+            feedback.enabled = false;
         }
+        foreach (Animator animator in tower.GetComponentsInChildren<Animator>()){
+            animator.enabled = false;
+        }
+        foreach (ParticleSystem particles in tower.GetComponentsInChildren<ParticleSystem>()){
+            particles.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        }
+        GameObject owner = new GameObject("Tower Sale VFX");
+        owner.transform.position = tower.transform.position;
+        TowerSaleEffect effect = owner.AddComponent<TowerSaleEffect>();
+        effect.visualRoot = tower;
+        // External parent prevents sale animation from modifying imported pivots.
+        tower.transform.SetParent(owner.transform, true);
+        Color tint = attack is FlameAttackData ? new Color(1f, .32f, .07f) :
+            attack is ArcaneAttackData ? new Color(.7f, .35f, 1f) :
+            attack is LightningAttackData ? new Color(.2f, .85f, 1f) :
+            new Color(1f, .74f, .3f);
+        effect.StartCoroutine(effect.Animate(tint, refund));
     }
 
-    public void Configure(
-        ComputeShader computeShader,
-        Shader destructionShader,
-        ParticleSystem particlePrefab,
-        AudioClip destructionClip
-    ){
-        instantDestructionCS = computeShader;
-        instantDestructionSG = destructionShader;
-        dustParticlePrefab = particlePrefab;
-        destructionAudioClip = destructionClip;
-        destructionAudioVolume = 0.18f;
-        useGravity = true;
-        afterDestructionMode = AfterDestructionMode.Nothing;
-        afterDestructionTime = EffectLifetime;
-    }
+    private IEnumerator Animate(Color tint, int refund){
+        Shader shader = Shader.Find("Sprites/Default");
+        LineRenderer ring = null;
+        if (shader != null){
+            effectMaterial = new Material(shader);
+            GameObject ringObject = new GameObject("Sale Ring");
+            ringObject.transform.SetParent(transform, false);
+            ring = ringObject.AddComponent<LineRenderer>();
+            ring.sharedMaterial = effectMaterial;
+            ring.useWorldSpace = false;
+            ring.loop = true;
+            ring.positionCount = 48;
+            ring.widthMultiplier = .055f;
+            ring.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-    public static bool Play(
-        GameObject towerRoot,
-        ComputeShader computeShader,
-        Shader destructionShader,
-        ParticleSystem particlePrefab,
-        AudioClip destructionClip
-    ){
-        if (towerRoot == null || computeShader == null ||
-            destructionShader == null){
-            return false;
+            GameObject sparksObject = new GameObject("Sale Motes");
+            sparksObject.SetActive(false);
+            sparksObject.transform.SetParent(transform, false);
+            sparksObject.transform.localPosition = Vector3.up * .65f;
+            ParticleSystem sparks = sparksObject.AddComponent<ParticleSystem>();
+            var main = sparks.main;
+            main.loop = false;
+            main.duration = .6f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(.3f, .65f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(.7f, 1.6f);
+            main.startSize = new ParticleSystem.MinMaxCurve(.04f, .1f);
+            main.startColor = tint;
+            main.maxParticles = 18;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var emission = sparks.emission;
+            emission.rateOverTime = 0;
+            emission.SetBursts(new[]{new ParticleSystem.Burst(0, 18)});
+            var shape = sparks.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = .65f;
+            var color = sparks.colorOverLifetime;
+            color.enabled = true;
+            Gradient fade = new Gradient();
+            fade.SetKeys(new[]{new GradientColorKey(Color.white, 0)},
+                new[]{new GradientAlphaKey(1, 0), new GradientAlphaKey(0, 1)});
+            color.color = fade;
+            sparks.GetComponent<ParticleSystemRenderer>().sharedMaterial = effectMaterial;
+            sparksObject.SetActive(true);
+            sparks.Play();
         }
 
-        List<TowerDestructionEffect> destructibles = new();
-        foreach (MeshFilter meshFilter in
-                 towerRoot.GetComponentsInChildren<MeshFilter>()){
-            Mesh mesh = meshFilter.sharedMesh;
-            Renderer meshRenderer = meshFilter.GetComponent<Renderer>();
-            if (mesh == null || meshRenderer == null || !mesh.isReadable){
-                continue;
+        GameObject labelObject = new GameObject("Sale Refund");
+        labelObject.transform.SetParent(transform, false);
+        TextMeshPro label = labelObject.AddComponent<TextMeshPro>();
+        label.text = "+" + refund;
+        label.fontSize = 4;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = new Color(1f, .8f, .25f);
+        label.rectTransform.sizeDelta = new Vector2(3f, 1f);
+        label.GetComponent<MeshRenderer>().sortingOrder = 25;
+        Vector3 initialScale = visualRoot.transform.localScale;
+        Vector3 initialPosition = visualRoot.transform.localPosition;
+        float elapsed = 0f;
+        while (elapsed < .85f){
+            elapsed += Time.deltaTime;
+            float collapse = Mathf.Clamp01(elapsed / .3f);
+            float ease = collapse * collapse * (3f - 2f * collapse);
+            if (visualRoot != null){
+                visualRoot.transform.localScale = initialScale * (1f - ease);
+                visualRoot.transform.localPosition = initialPosition + Vector3.down * (.25f * ease);
+                if (collapse >= 1f){
+                    Destroy(visualRoot);
+                    visualRoot = null;
+                }
             }
-
-            TowerDestructionEffect effect =
-                meshFilter.gameObject.AddComponent<TowerDestructionEffect>();
-            effect.Configure(
-                computeShader,
-                destructionShader,
-                particlePrefab,
-                destructionClip
-            );
-            destructibles.Add(effect);
-        }
-
-        if (destructibles.Count == 0){
-            return false;
-        }
-
-        TowerDestructionSequence sequence =
-            towerRoot.AddComponent<TowerDestructionSequence>();
-        sequence.Begin(destructibles, EffectLifetime);
-        return true;
-    }
-
-    public static bool PlayEnemyDeath(GameObject enemyRoot, Vector3 center){
-        if (enemyRoot == null || sharedComputeShader == null ||
-            sharedDestructionShader == null ||
-            activeEnemyEffects >= maxConcurrentEnemyEffects ||
-            Random.value > enemyEffectChance){
-            return false;
-        }
-
-        Camera gameplayCamera = Camera.main;
-        if (gameplayCamera == null || Vector3.Distance(
-                gameplayCamera.transform.position,
-                center
-            ) > enemyEffectMaxDistance){
-            return false;
-        }
-
-        SkinnedMeshRenderer[] skinnedRenderers =
-            enemyRoot.GetComponentsInChildren<SkinnedMeshRenderer>();
-        if (skinnedRenderers.Length == 0){
-            return false;
-        }
-
-        GameObject effectRoot = new GameObject("Enemy Instant Destruction VFX");
-        List<TowerDestructionEffect> destructibles = new();
-        List<Mesh> bakedMeshes = new();
-
-        foreach (SkinnedMeshRenderer sourceRenderer in skinnedRenderers){
-            if (sourceRenderer == null || !sourceRenderer.enabled ||
-                sourceRenderer.sharedMesh == null){
-                continue;
+            float progress = Mathf.Clamp01(elapsed / .65f);
+            if (ring != null){
+                Color ringColor = tint;
+                ringColor.a = 1f - progress;
+                ring.startColor = ring.endColor = ringColor;
+                float radius = Mathf.Lerp(.35f, 1.5f, 1f - Mathf.Pow(1f - progress, 3));
+                for (int i = 0; i < ring.positionCount; i++){
+                    float angle = i * Mathf.PI * 2 / ring.positionCount;
+                    ring.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius, .05f, Mathf.Sin(angle) * radius));
+                }
             }
-
-            Mesh bakedMesh = new Mesh{
-                name = $"{sourceRenderer.sharedMesh.name} Death Pose"
-            };
-            sourceRenderer.BakeMesh(bakedMesh, false);
-
-            GameObject meshObject = new GameObject(sourceRenderer.name);
-            meshObject.transform.SetParent(effectRoot.transform, false);
-            meshObject.transform.SetPositionAndRotation(
-                sourceRenderer.transform.position,
-                sourceRenderer.transform.rotation
-            );
-            meshObject.transform.localScale = sourceRenderer.transform.lossyScale;
-
-            MeshFilter meshFilter = meshObject.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = bakedMesh;
-            MeshRenderer meshRenderer = meshObject.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterials = sourceRenderer.sharedMaterials;
-            meshRenderer.receiveShadows = sourceRenderer.receiveShadows;
-
-            TowerDestructionEffect effect =
-                meshObject.AddComponent<TowerDestructionEffect>();
-            effect.Configure(
-                sharedComputeShader,
-                sharedDestructionShader,
-                destructibles.Count == 0 ? sharedParticlePrefab : null,
-                sharedDestructionClip
-            );
-            destructibles.Add(effect);
-            bakedMeshes.Add(bakedMesh);
+            label.transform.localPosition = Vector3.up * (1.8f + elapsed * .6f);
+            Camera camera = Camera.main;
+            if (camera != null) label.transform.rotation = camera.transform.rotation;
+            label.alpha = 1f - Mathf.Clamp01((elapsed - .4f) / .45f);
+            yield return null;
         }
-
-        if (destructibles.Count == 0){
-            Destroy(effectRoot);
-            return false;
-        }
-
-        activeEnemyEffects++;
-        TowerDestructionSequence sequence =
-            effectRoot.AddComponent<TowerDestructionSequence>();
-        sequence.Begin(
-            destructibles,
-            EffectLifetime,
-            bakedMeshes,
-            OnEnemyEffectFinished,
-            center + Vector3.up * 0.8f
-        );
-        return true;
-    }
-
-    private static void OnEnemyEffectFinished(){
-        activeEnemyEffects = Mathf.Max(0, activeEnemyEffects - 1);
-    }
-}
-
-public sealed class TowerDestructionSequence : MonoBehaviour{
-    private IReadOnlyList<TowerDestructionEffect> destructibles;
-    private IReadOnlyList<Mesh> runtimeMeshes;
-    private System.Action onFinished;
-    private Vector3 explosionCenter;
-    private float lifetime;
-    private bool cleanedUp;
-
-    public void Begin(
-        IReadOnlyList<TowerDestructionEffect> effects,
-        float effectLifetime,
-        IReadOnlyList<Mesh> generatedMeshes = null,
-        System.Action completion = null,
-        Vector3? customExplosionCenter = null
-    ){
-        destructibles = effects;
-        runtimeMeshes = generatedMeshes;
-        onFinished = completion;
-        explosionCenter = customExplosionCenter ??
-            (transform.position + Vector3.up * 0.8f);
-        lifetime = effectLifetime;
-        StartCoroutine(PlayAfterInitialization());
-    }
-
-    private IEnumerator PlayAfterInitialization(){
-        // BaseDestruction prepares its GPU buffers in Start. Waiting one frame
-        // keeps runtime-created components compatible with that lifecycle.
-        yield return null;
-
-        foreach (TowerDestructionEffect destructible in destructibles){
-            if (destructible != null){
-                destructible.OnTrigger(explosionCenter);
-            }
-        }
-
-        yield return new WaitForSeconds(lifetime);
-
-        CleanUpGeneratedResources();
         Destroy(gameObject);
     }
 
     private void OnDestroy(){
-        CleanUpGeneratedResources();
-    }
-
-    private void CleanUpGeneratedResources(){
-        if (cleanedUp){
-            return;
-        }
-
-        cleanedUp = true;
-        if (runtimeMeshes != null){
-            foreach (Mesh runtimeMesh in runtimeMeshes){
-                if (runtimeMesh != null){
-                    Destroy(runtimeMesh);
-                }
-            }
-        }
-
-        onFinished?.Invoke();
-        onFinished = null;
+        if (effectMaterial != null) Destroy(effectMaterial);
     }
 }

@@ -12,6 +12,7 @@ public class CameraMovement : MonoBehaviour {
     [SerializeField] private bool edgeScrolling = true;
     [SerializeField, Range(4f, 64f)] private float edgeScrollThickness = 18f;
     [SerializeField, Range(0.03f, 0.5f)] private float rotationSensitivity = 0.12f;
+    [SerializeField, Min(1f)] private float rotationDragThreshold = 6f;
     [SerializeField, Range(0.15f, 0.5f)] private float doubleClickWindow = 0.28f;
     [SerializeField, Min(0.1f)] private float neutralReturnDuration = 0.38f;
     [Header("Cursor")]
@@ -22,13 +23,21 @@ public class CameraMovement : MonoBehaviour {
     [SerializeField] private float minZ = -40f;
     [SerializeField] private float maxZ = 40f;
     private Vector3 currentVelocity;
+    [Header("Zoom")]
+    [SerializeField, Range(0.2f, 0.9f)] private float minimumHeightRatio = 0.5f;
+    [SerializeField, Range(1f, 1.5f)] private float maximumHeightRatio = 1.2f;
+    [SerializeField, Min(0.1f)] private float zoomStep = 2f;
+    [SerializeField, Min(1f)] private float zoomSmoothing = 14f;
+    private float initialHeight;
+    private float targetHeight;
     private Quaternion baseRotation;
     private MMF_Player movementFeedbacks;
-    private MMF_Player rotationFeedbacks;
     private bool wasMoving;
     private WaveManager waveManager;
     private TowerPlacementManager placementManager;
     private bool rotating;
+    private bool pendingRotation;
+    private Vector2 rotationPressPosition;
     private float cameraYaw;
     private float lastRightClickTime = -10f;
     private Coroutine neutralReturn;
@@ -36,9 +45,13 @@ public class CameraMovement : MonoBehaviour {
     private bool previousCursorVisibility;
     private Vector2 cursorPositionBeforeRotation;
     private bool cursorInitialized;
+    private Vector3 baseDamageShakeOffset;
+    private float baseDamageShakeRemaining;
+    private const float BaseDamageShakeDuration = 0.18f;
 
     private void Awake(){
         baseRotation = transform.rotation;
+        initialHeight = targetHeight = transform.position.y;
         cameraYaw = baseRotation.eulerAngles.y;
 
         if (GetComponent<MMCameraFieldOfViewShaker>() == null){
@@ -56,19 +69,6 @@ public class CameraMovement : MonoBehaviour {
         });
         movementFeedbacks.Initialization();
 
-        GameObject rotationFeedbackObject =
-            new GameObject("Camera Rotation Feedbacks");
-        rotationFeedbackObject.transform.SetParent(transform, false);
-        rotationFeedbacks = rotationFeedbackObject.AddComponent<MMF_Player>();
-        rotationFeedbacks.AddFeedback(new MMF_CameraFieldOfView{
-            Duration = 0.24f,
-            RelativeFieldOfView = true,
-            RemapFieldOfViewZero = 0f,
-            RemapFieldOfViewOne = 0.18f,
-            ResetShakerValuesAfterShake = true,
-            ResetTargetValuesAfterShake = true
-        });
-        rotationFeedbacks.Initialization();
     }
 
     private void Start(){
@@ -78,11 +78,13 @@ public class CameraMovement : MonoBehaviour {
     }
 
     private void OnDisable(){
+        transform.position -= baseDamageShakeOffset;
+        baseDamageShakeOffset = Vector3.zero;
+        baseDamageShakeRemaining = 0f;
         EndRotation();
         currentVelocity = Vector3.zero;
         wasMoving = false;
         movementFeedbacks?.StopFeedbacks();
-        rotationFeedbacks?.StopFeedbacks();
         Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
         Cursor.visible = true;
         cursorInitialized = false;
@@ -97,6 +99,9 @@ public class CameraMovement : MonoBehaviour {
     }
 
     private void Update(){
+        // Remove last frame's visual offset before movement and zoom calculations.
+        transform.position -= baseDamageShakeOffset;
+        baseDamageShakeOffset = Vector3.zero;
         if (
             RunUpgradeState.Current.BlocksInput ||
             (waveManager != null && !waveManager.GameplayReady)
@@ -117,18 +122,17 @@ public class CameraMovement : MonoBehaviour {
         }
 
         HandleRotationInput();
+        UpdateZoom();
 
-        float horizontal = !rotating
-            ? (keyboard != null && keyboard.dKey.isPressed ? 1f : 0f) -
-                (keyboard != null && keyboard.aKey.isPressed ? 1f : 0f)
-            : 0f;
+        float horizontal =
+            (keyboard != null && (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) ? 1f : 0f) -
+            (keyboard != null && (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) ? 1f : 0f);
 
-        float vertical = !rotating
-            ? (keyboard != null && keyboard.wKey.isPressed ? 1f : 0f) -
-                (keyboard != null && keyboard.sKey.isPressed ? 1f : 0f)
-            : 0f;
+        float vertical =
+            (keyboard != null && (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) ? 1f : 0f) -
+            (keyboard != null && (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) ? 1f : 0f);
 
-        Vector2 edgeInput = rotating ? Vector2.zero : GetEdgeScrollInput();
+        Vector2 edgeInput = rotating || pendingRotation ? Vector2.zero : GetEdgeScrollInput();
         horizontal = Mathf.Clamp(horizontal + edgeInput.x, -1f, 1f);
         vertical = Mathf.Clamp(vertical + edgeInput.y, -1f, 1f);
 
@@ -178,6 +182,40 @@ public class CameraMovement : MonoBehaviour {
         transform.position = position;
     }
 
+    public void PlayBaseDamageShake(){
+        baseDamageShakeRemaining = BaseDamageShakeDuration;
+    }
+
+    private void LateUpdate(){
+        if (baseDamageShakeRemaining <= 0f) return;
+        baseDamageShakeRemaining = Mathf.Max(0f,
+            baseDamageShakeRemaining - Time.unscaledDeltaTime);
+        float intensity = baseDamageShakeRemaining / BaseDamageShakeDuration;
+        Vector2 jitter = Random.insideUnitCircle * (0.075f * intensity);
+        baseDamageShakeOffset = transform.right * jitter.x + transform.up * jitter.y;
+        transform.position += baseDamageShakeOffset;
+    }
+
+    private void UpdateZoom(){
+        if (rotating || neutralReturn != null) return;
+        Mouse mouse = Mouse.current;
+        if (mouse != null && Application.isFocused &&
+            !(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())){
+            float scroll = mouse.scroll.ReadValue().y;
+            if (Mathf.Abs(scroll) > .01f){
+                targetHeight = Mathf.Clamp(targetHeight - Mathf.Sign(scroll) * zoomStep,
+                    initialHeight * minimumHeightRatio,
+                    initialHeight * maximumHeightRatio);
+            }
+        }
+        float height = Mathf.Lerp(transform.position.y, targetHeight,
+            1f - Mathf.Exp(-zoomSmoothing * Time.unscaledDeltaTime));
+        Vector3 forward = transform.forward;
+        if (forward.y < -.1f){
+            transform.position += forward * ((height - transform.position.y) / forward.y);
+        }
+    }
+
     private void HandleRotationInput(){
         Mouse mouse = Mouse.current;
         if (mouse == null){
@@ -206,7 +244,21 @@ public class CameraMovement : MonoBehaviour {
                 return;
             }
 
-            BeginRotation();
+            pendingRotation = true;
+            rotationPressPosition = mouse.position.ReadValue();
+        }
+
+        if (pendingRotation){
+            if (!mouse.rightButton.isPressed){
+                pendingRotation = false;
+                return;
+            }
+            Vector2 drag = mouse.position.ReadValue() - rotationPressPosition;
+            if (Mathf.Abs(drag.x) >= rotationDragThreshold){
+                pendingRotation = false;
+                BeginRotation();
+                return;
+            }
         }
 
         if (!rotating){
@@ -235,7 +287,6 @@ public class CameraMovement : MonoBehaviour {
         }
 
         rotating = true;
-        StopMovement();
         previousCursorLock = Cursor.lockState;
         previousCursorVisibility = Cursor.visible;
         if (Mouse.current != null){
@@ -243,10 +294,10 @@ public class CameraMovement : MonoBehaviour {
         }
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        rotationFeedbacks?.PlayFeedbacks(transform.position);
     }
 
     private void EndRotation(){
+        pendingRotation = false;
         if (!rotating){
             return;
         }
@@ -274,7 +325,6 @@ public class CameraMovement : MonoBehaviour {
 
     private IEnumerator ReturnToNeutral(){
         Quaternion startingRotation = transform.rotation;
-        rotationFeedbacks?.PlayFeedbacks(transform.position);
         float elapsed = 0f;
 
         while (elapsed < neutralReturnDuration){

@@ -70,7 +70,9 @@ public class EnemyHealth : MonoBehaviour{
         UpdateBurn();
         UpdateHitFlash();
 
-        if (!healthBarInitialized){
+        if (!healthBarInitialized ||
+            (Mathf.Approximately(displayedHealthFill, targetHealthFill) &&
+             Mathf.Approximately(displayedTrailFill, targetHealthFill))){
             return;
         }
 
@@ -85,8 +87,8 @@ public class EnemyHealth : MonoBehaviour{
             0.85f * Time.deltaTime
         );
 
-        healthFill.fillAmount = displayedHealthFill;
-        healthDamageTrail.fillAmount = displayedTrailFill;
+        SetBarFill(healthFill, displayedHealthFill);
+        SetBarFill(healthDamageTrail, displayedTrailFill);
         healthFill.color = GetHealthColor(displayedHealthFill);
     }
 
@@ -238,15 +240,15 @@ public class EnemyHealth : MonoBehaviour{
         targetHealthFill = currentHealth / maximumHealth;
 
         if (!healthBarInitialized){
-            healthFill.fillAmount = targetHealthFill;
+            SetBarFill(healthFill, targetHealthFill);
             return;
         }
 
         if (Mathf.Approximately(currentHealth, maximumHealth)){
             displayedHealthFill = targetHealthFill;
             displayedTrailFill = targetHealthFill;
-            healthFill.fillAmount = targetHealthFill;
-            healthDamageTrail.fillAmount = targetHealthFill;
+            SetBarFill(healthFill, targetHealthFill);
+            SetBarFill(healthDamageTrail, targetHealthFill);
         }
     }
 
@@ -273,12 +275,7 @@ public class EnemyHealth : MonoBehaviour{
             playerGold.AddEnemyReward(goldReward);
         }
 
-        if (!TowerDestructionEffect.PlayEnemyDeath(
-                gameObject,
-                transform.position
-            )){
-            EnemyDeathVfx.Play(transform.position);
-        }
+        EnemyDeathVfx.Play(transform.position);
         Died?.Invoke(this);
         Destroy(gameObject);
     }
@@ -324,8 +321,6 @@ public class EnemyHealth : MonoBehaviour{
             return;
         }
 
-        Sprite fillSprite = healthFill.sprite;
-
         backgroundRect.sizeDelta = new Vector2(112f, 16f);
         background.sprite = null;
         background.type = Image.Type.Simple;
@@ -342,10 +337,10 @@ public class EnemyHealth : MonoBehaviour{
 
         fillRect.SetParent(trackRect, false);
         ApplyBarPadding(fillRect, 1f);
-        healthFill.sprite = fillSprite;
-        healthFill.type = Image.Type.Filled;
-        healthFill.fillMethod = Image.FillMethod.Horizontal;
-        healthFill.fillOrigin = 0;
+        // A sprite with rounded/soft edges makes the bar look oval and
+        // obscures its exact health at both ends. A plain Image fills squarely.
+        healthFill.sprite = null;
+        healthFill.type = Image.Type.Simple;
         healthFill.raycastTarget = false;
 
         GameObject trailObject = new GameObject(
@@ -360,11 +355,8 @@ public class EnemyHealth : MonoBehaviour{
         trailRect.SetSiblingIndex(0);
 
         healthDamageTrail = trailObject.GetComponent<Image>();
-        healthDamageTrail.sprite = fillSprite;
-        healthDamageTrail.type = Image.Type.Filled;
-        healthDamageTrail.fillMethod = Image.FillMethod.Horizontal;
-        healthDamageTrail.fillOrigin = 0;
-        healthDamageTrail.fillAmount = 1f;
+        healthDamageTrail.sprite = null;
+        healthDamageTrail.type = Image.Type.Simple;
         healthDamageTrail.color = new Color(1f, 0.24f, 0.16f, 0.9f);
         healthDamageTrail.raycastTarget = false;
 
@@ -434,6 +426,13 @@ public class EnemyHealth : MonoBehaviour{
         rect.offsetMax = new Vector2(-padding, -padding);
     }
 
+    private static void SetBarFill(Image image, float amount){
+        RectTransform rect = image.rectTransform;
+        rect.anchorMax = new Vector2(Mathf.Clamp01(amount), 1f);
+        rect.offsetMin = new Vector2(0f, 1f);
+        rect.offsetMax = new Vector2(0f, -1f);
+    }
+
     private static Color GetHealthColor(float healthPercent){
         Color lowHealth = new Color(1f, 0.18f, 0.14f, 1f);
         Color mediumHealth = new Color(1f, 0.68f, 0.12f, 1f);
@@ -455,6 +454,7 @@ public static class EnemyDeathVfx
 {
     private const string ParticleShader =
         "Universal Render Pipeline/Particles/Unlit";
+    private static Material sharedDeathMaterial;
 
     public static void Play(Vector3 position)
     {
@@ -493,11 +493,11 @@ public static class EnemyDeathVfx
         main.playOnAwake = false;
         main.startLifetime = new ParticleSystem.MinMaxCurve(0.45f, 0.85f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(1.8f, 4.5f);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.12f, 0.38f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.16f, 0.46f);
         main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
         main.gravityModifier = 0.55f;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 32;
+        main.maxParticles = 36;
         main.stopAction = ParticleSystemStopAction.Destroy;
     }
 
@@ -506,7 +506,7 @@ public static class EnemyDeathVfx
         ParticleSystem.EmissionModule emission = particles.emission;
         emission.rateOverTime = 0f;
         emission.SetBursts(new[] {
-            new ParticleSystem.Burst(0f, 24)
+            new ParticleSystem.Burst(0f, 32)
         });
     }
 
@@ -522,15 +522,15 @@ public static class EnemyDeathVfx
     {
         ParticleSystem.MainModule main = particles.main;
         main.startColor = new ParticleSystem.MinMaxGradient(
-            new Color(0.28f, 0.05f, 0.03f, 1f),
-            new Color(0.72f, 0.24f, 0.08f, 1f)
+            new Color(0.48f, 0.04f, 0.03f, 1f),
+            new Color(0.95f, 0.18f, 0.10f, 1f)
         );
 
         Gradient fade = new Gradient();
         fade.SetKeys(
             new[] {
-                new GradientColorKey(new Color(0.95f, 0.36f, 0.12f), 0f),
-                new GradientColorKey(new Color(0.18f, 0.12f, 0.1f), 1f)
+                new GradientColorKey(new Color(1f, 0.45f, 0.35f), 0f),
+                new GradientColorKey(new Color(0.30f, 0.05f, 0.04f), 1f)
             },
             new[] {
                 new GradientAlphaKey(1f, 0f),
@@ -567,10 +567,11 @@ public static class EnemyDeathVfx
             return;
         }
 
-        Material material = new Material(shader);
+        if (sharedDeathMaterial == null){
+            sharedDeathMaterial = new Material(shader);
+        }
         ParticleSystemRenderer particleRenderer =
             effectObject.GetComponent<ParticleSystemRenderer>();
-        particleRenderer.material = material;
-        Object.Destroy(material, 1.2f);
+        particleRenderer.sharedMaterial = sharedDeathMaterial;
     }
 }

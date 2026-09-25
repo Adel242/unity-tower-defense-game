@@ -9,16 +9,26 @@ public class WaveManager : MonoBehaviour{
     [SerializeField] private float timeBetweenWaves = 10f;
     [Header("Infinite waves")]
     [SerializeField] private GameObject enemyPrefab;
-    [SerializeField, Min(1)] private int baseEnemyCount = 15;
-    [SerializeField, Min(0f)] private float enemiesAddedPerWave = 2.25f;
-    [SerializeField, Min(0.01f)] private float initialSpawnInterval = 1.12f;
-    [SerializeField, Min(0.01f)] private float minimumSpawnInterval = 0.14f;
-    [SerializeField, Range(0.8f, 1f)] private float spawnIntervalDecay = 0.965f;
-    [SerializeField, Min(0.1f)] private float initialHealthMultiplier = 0.6f;
-    [SerializeField, Min(1f)] private float healthGrowthPerWave = 1.115f;
+    [SerializeField, Min(1)] private int baseEnemyCount = 32;
+    [SerializeField, Min(0f)] private float enemiesAddedPerWave = 4f;
+    [SerializeField, Range(0f, 0.4f)] private float enemyCountVariance = 0.14f;
+    [SerializeField, Min(1f)] private float swarmCountMultiplier = 1.45f;
+    [SerializeField, Min(1f)] private float fastCountMultiplier = 1.15f;
+    [SerializeField, Range(0.1f, 1f)] private float specialCountMultiplier = 0.82f;
+    [SerializeField, Min(1)] private int baseSpawnBatchSize = 2;
+    [SerializeField, Min(0.01f)] private float initialSpawnInterval = 0.55f;
+    [SerializeField, Min(0.01f)] private float minimumSpawnInterval = 0.08f;
+    [SerializeField, Range(0.8f, 1f)] private float spawnIntervalDecay = 0.96f;
+    [SerializeField, Min(0.1f)] private float initialHealthMultiplier = 0.4f;
+    [SerializeField, Min(1f)] private float healthGrowthPerWave = 1.085f;
+    [SerializeField, Range(0.1f, 1f)] private float swarmHealthMultiplier = 0.85f;
+    [SerializeField, Range(0.1f, 1f)] private float fastHealthMultiplier = 0.9f;
     [SerializeField, Min(1f)] private float maximumHealthMultiplier = 1000000f;
-    [SerializeField, Min(0f)] private float speedAddedPerWave = 0.015f;
-    [SerializeField, Min(0.1f)] private float maximumSpeedMultiplier = 1.9f;
+    [SerializeField, Min(0f)] private float speedAddedPerWave = 0.012f;
+    [SerializeField, Min(0.1f)] private float maximumSpeedMultiplier = 1.75f;
+    [SerializeField, Min(0f)] private float initialGoldRewardMultiplier = 0.5f;
+    [SerializeField, Min(0f)] private float rewardGrowthEveryFiveWaves = 0.025f;
+    [SerializeField, Min(1f)] private float specialRewardMultiplier = 1.1f;
     [Header("Run upgrades")]
     [SerializeField, Min(0f)] private float missionIntroDelay = 1.2f;
     [SerializeField] private GameObject upgradePanel;
@@ -496,6 +506,7 @@ public class WaveManager : MonoBehaviour{
                 enemySpawner.SpawnWave(
                     enemyPrefab,
                     wave.EnemyCount,
+                    wave.SpawnBatchSize,
                     wave.SpawnInterval,
                     wave.HealthMultiplier,
                     wave.SpeedMultiplier,
@@ -525,13 +536,30 @@ public class WaveManager : MonoBehaviour{
         bool swarmWave = !specialWave && waveNumber % 3 == 0;
         bool fastWave = !specialWave && waveNumber % 4 == 0;
 
-        int enemyCount = Mathf.RoundToInt(baseEnemyCount + step * enemiesAddedPerWave);
-        if (swarmWave){ enemyCount += Mathf.CeilToInt(waveNumber * 0.35f); }
-        if (specialWave){ enemyCount = Mathf.RoundToInt(enemyCount * 0.82f); }
-        enemyCount = Mathf.Clamp(enemyCount, 1, 250);
+        float countVariation = 1f + Mathf.Sin(
+            waveNumber * 1.37f + 1.77f
+        ) * enemyCountVariance;
+        float typeCountMultiplier = specialWave
+            ? specialCountMultiplier
+            : swarmWave
+                ? swarmCountMultiplier
+                : fastWave
+                    ? fastCountMultiplier
+                    : 1f;
+        int enemyCount = Mathf.RoundToInt(
+            (baseEnemyCount + step * enemiesAddedPerWave) *
+            countVariation * typeCountMultiplier
+        );
+        enemyCount = Mathf.Clamp(enemyCount, 1, 400);
+
+        int batchSize = baseSpawnBatchSize + step / 12;
+        if (swarmWave){ batchSize++; }
+        batchSize = Mathf.Clamp(batchSize, 1, 5);
 
         float health = initialHealthMultiplier * Mathf.Pow(healthGrowthPerWave, step);
-        if (specialWave){ health *= 1.45f; }
+        if (swarmWave){ health *= swarmHealthMultiplier; }
+        if (fastWave && !swarmWave){ health *= fastHealthMultiplier; }
+        if (specialWave){ health *= 1.4f; }
         health = Mathf.Clamp(health, 0.1f, maximumHealthMultiplier);
 
         float speed = 1f + step * speedAddedPerWave;
@@ -540,26 +568,37 @@ public class WaveManager : MonoBehaviour{
         speed = Mathf.Clamp(speed, 0.75f, maximumSpeedMultiplier);
 
         float interval = initialSpawnInterval * Mathf.Pow(spawnIntervalDecay, step);
-        if (swarmWave){ interval *= 0.9f; }
-        if (specialWave){ interval *= 1.18f; }
+        if (swarmWave){ interval *= 0.8f; }
+        if (specialWave){ interval *= 1.1f; }
         interval = Mathf.Max(minimumSpawnInterval, interval);
 
-        float reward = 1f + Mathf.Floor(step / 5f) * 0.1f;
-        if (specialWave){ reward *= 1.35f; }
-        reward = Mathf.Min(4f, reward);
+        float reward = initialGoldRewardMultiplier +
+                       Mathf.Floor(step / 5f) * rewardGrowthEveryFiveWaves;
+        if (specialWave){ reward *= specialRewardMultiplier; }
+        reward = Mathf.Min(1.5f, reward);
 
-        return new InfiniteWave(enemyCount, interval, health, speed, reward);
+        return new InfiniteWave(
+            enemyCount,
+            batchSize,
+            interval,
+            health,
+            speed,
+            reward
+        );
     }
 
     private readonly struct InfiniteWave{
         public readonly int EnemyCount;
+        public readonly int SpawnBatchSize;
         public readonly float SpawnInterval;
         public readonly float HealthMultiplier;
         public readonly float SpeedMultiplier;
         public readonly float GoldRewardMultiplier;
 
-        public InfiniteWave(int count, float interval, float health, float speed, float reward){
+        public InfiniteWave(int count, int batchSize, float interval,
+            float health, float speed, float reward){
             EnemyCount = count;
+            SpawnBatchSize = batchSize;
             SpawnInterval = interval;
             HealthMultiplier = health;
             SpeedMultiplier = speed;

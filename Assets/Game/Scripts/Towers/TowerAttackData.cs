@@ -29,6 +29,8 @@ public static class TowerAttackVfx
 {
     private const string ParticleShader =
         "Universal Render Pipeline/Particles/Unlit";
+    private static Material sharedParticleMaterial;
+    private static Material sharedLightningMaterial;
 
     public static void PlayPrefab(
         GameObject prefab,
@@ -91,9 +93,7 @@ public static class TowerAttackVfx
 
         ParticleSystemRenderer renderer =
             effectObject.GetComponent<ParticleSystemRenderer>();
-        Material effectMaterial = CreateMaterial(ParticleShader, Color.white);
-        renderer.material = effectMaterial;
-        Object.Destroy(effectMaterial, 1f);
+        renderer.sharedMaterial = GetSharedMaterial(false);
 
         effectObject.SetActive(true);
         particles.Play();
@@ -163,9 +163,7 @@ public static class TowerAttackVfx
 
         ParticleSystemRenderer renderer =
             effectObject.GetComponent<ParticleSystemRenderer>();
-        Material effectMaterial = CreateMaterial(ParticleShader, Color.white);
-        renderer.material = effectMaterial;
-        Object.Destroy(effectMaterial, 1f);
+        renderer.sharedMaterial = GetSharedMaterial(false);
 
         effectObject.SetActive(true);
         particles.Play();
@@ -176,10 +174,7 @@ public static class TowerAttackVfx
         GameObject effectObject = new GameObject("Lightning Arc VFX");
         LightningArcEffect effect =
             effectObject.AddComponent<LightningArcEffect>();
-        effect.Initialize(start, end, CreateMaterial(
-            ParticleShader,
-            new Color(0.25f, 0.75f, 1f, 1f)
-        ));
+        effect.Initialize(start, end, GetSharedMaterial(true));
     }
 
     public static void PlayFlameCone(
@@ -221,9 +216,7 @@ public static class TowerAttackVfx
 
         ParticleSystemRenderer renderer =
             effectObject.GetComponent<ParticleSystemRenderer>();
-        Material effectMaterial = CreateMaterial(ParticleShader, Color.white);
-        renderer.material = effectMaterial;
-        Object.Destroy(effectMaterial, 1f);
+        renderer.sharedMaterial = GetSharedMaterial(false);
 
         effectObject.SetActive(true);
         particles.Play();
@@ -245,17 +238,22 @@ public static class TowerAttackVfx
         return gradient;
     }
 
-    private static Material CreateMaterial(string shaderName, Color color)
+    private static Material GetSharedMaterial(bool lightning)
     {
-        Shader shader = Shader.Find(shaderName);
+        Material material = lightning ? sharedLightningMaterial : sharedParticleMaterial;
+        if (material != null) return material;
+
+        Shader shader = Shader.Find(ParticleShader);
 
         if (shader == null)
         {
             shader = Shader.Find("Sprites/Default");
         }
 
-        Material material = new Material(shader);
-        material.color = color;
+        material = new Material(shader);
+        material.color = lightning ? new Color(0.25f, 0.75f, 1f, 1f) : Color.white;
+        if (lightning) sharedLightningMaterial = material;
+        else sharedParticleMaterial = material;
         return material;
     }
 }
@@ -266,12 +264,10 @@ internal sealed class LightningArcEffect : MonoBehaviour
     private const float Duration = 0.15f;
 
     private LineRenderer lineRenderer;
-    private Material material;
     private float remainingTime;
 
     public void Initialize(Vector3 start, Vector3 end, Material newMaterial)
     {
-        material = newMaterial;
         remainingTime = Duration;
 
         lineRenderer = gameObject.AddComponent<LineRenderer>();
@@ -280,7 +276,7 @@ internal sealed class LightningArcEffect : MonoBehaviour
         lineRenderer.startWidth = 0.12f;
         lineRenderer.endWidth = 0.035f;
         lineRenderer.numCapVertices = 2;
-        lineRenderer.material = material;
+        lineRenderer.sharedMaterial = newMaterial;
         lineRenderer.startColor = new Color(0.7f, 0.95f, 1f, 1f);
         lineRenderer.endColor = new Color(0.1f, 0.45f, 1f, 1f);
 
@@ -318,13 +314,6 @@ internal sealed class LightningArcEffect : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
-    {
-        if (material != null)
-        {
-            Destroy(material);
-        }
-    }
 }
 
 public static class TowerAttackAudio

@@ -32,21 +32,22 @@ public class LightningAttackData : TowerAttackData
             return false;
         }
 
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
         float closestDistance = Mathf.Infinity;
 
-        foreach (GameObject enemy in enemies)
+        var activeEnemies = EnemyMovement.ActiveEnemies;
+        for (int index = activeEnemies.Count - 1; index >= 0; index--)
         {
+            EnemyMovement enemy = activeEnemies[index];
+            if (enemy == null || !enemy.isActiveAndEnabled) continue;
             bool isEnemyLayer =
-                (enemyLayer.value & (1 << enemy.layer)) != 0;
+                (enemyLayer.value & (1 << enemy.gameObject.layer)) != 0;
 
             if (!isEnemyLayer)
             {
                 continue;
             }
 
-            EnemyHealth enemyHealth =
-                enemy.GetComponentInParent<EnemyHealth>();
+            EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
 
             if (
                 enemyHealth == null ||
@@ -63,13 +64,10 @@ public class LightningAttackData : TowerAttackData
 
             if (distance < closestDistance && distance <= bounceRange * RunUpgradeState.Current.Multiplier("chain", this))
             {
-                EnemyMovement movement =
-                    enemy.GetComponent<EnemyMovement>();
-
-                if (movement != null && movement.TargetPoint != null)
+                if (enemy.TargetPoint != null)
                 {
                     closestDistance = distance;
-                    nextTarget = movement.TargetPoint;
+                    nextTarget = enemy.TargetPoint;
                 }
             }
         }

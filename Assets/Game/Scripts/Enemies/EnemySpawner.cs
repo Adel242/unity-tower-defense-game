@@ -5,12 +5,13 @@ using UnityEngine.AI;
 public class EnemySpawner : MonoBehaviour{
     [SerializeField] private BoxCollider spawnZone;
     [SerializeField] private Transform destinationPoint;
-    [SerializeField] private float minimumSpawnDistance = 0.7f;
+    [SerializeField, Min(0f)] private float minimumSpawnDistance = 0.3f;
     public event System.Action<GameObject> EnemySpawned;
 
     public IEnumerator SpawnWave(
         GameObject enemyPrefab,
         int enemyCount,
+        int spawnBatchSize,
         float timeBetweenEnemies,
         float healthMultiplier,
         float speedMultiplier,
@@ -18,6 +19,7 @@ public class EnemySpawner : MonoBehaviour{
     ){
         if (enemyPrefab == null){ yield break; }
 
+        spawnBatchSize = Mathf.Max(1, spawnBatchSize);
         for (int i = 0; i < enemyCount; i++){
             Vector3 spawnPosition;
 
@@ -46,7 +48,8 @@ public class EnemySpawner : MonoBehaviour{
                 movement.SetDestination(destinationPoint);
             }
 
-            if (i < enemyCount - 1){
+            bool batchCompleted = (i + 1) % spawnBatchSize == 0;
+            if (i < enemyCount - 1 && batchCompleted){
                 yield return new WaitForSeconds(timeBetweenEnemies);
             }
         }
@@ -71,13 +74,14 @@ public class EnemySpawner : MonoBehaviour{
                 continue;
             }
 
-            Collider[] nearbyEnemies = Physics.OverlapSphere(
+            bool spawnBlocked = Physics.CheckSphere(
                 hit.position,
                 minimumSpawnDistance,
-                LayerMask.GetMask("Enemy")
+                LayerMask.GetMask("Enemy"),
+                QueryTriggerInteraction.Ignore
             );
 
-            if (nearbyEnemies.Length > 0){
+            if (spawnBlocked){
                 continue;
             }
 

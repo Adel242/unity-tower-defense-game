@@ -36,15 +36,15 @@ public class CannonAttackData : TowerAttackData
             directTarget.TakeDamage(directDamage);
         }
 
-        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-
-        foreach (GameObject enemy in enemies)
+        var activeEnemies = EnemyMovement.ActiveEnemies;
+        for (int index = activeEnemies.Count - 1; index >= 0; index--)
         {
-            EnemyHealth enemyHealth =
-                enemy.GetComponentInParent<EnemyHealth>();
+            EnemyMovement enemy = activeEnemies[index];
+            if (enemy == null || !enemy.isActiveAndEnabled) continue;
+            EnemyHealth enemyHealth = enemy.GetComponent<EnemyHealth>();
 
             bool isEnemyLayer =
-                (enemyLayer.value & (1 << enemy.layer)) != 0;
+                (enemyLayer.value & (1 << enemy.gameObject.layer)) != 0;
 
             bool isInSplashRadius =
                 Vector3.Distance(enemy.transform.position, explosionPosition)
