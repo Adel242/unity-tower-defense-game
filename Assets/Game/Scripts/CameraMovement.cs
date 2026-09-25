@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 
 [DefaultExecutionOrder(-100)]
 public class CameraMovement : MonoBehaviour {
+    public const int BaseDamageShakeChannel = 73;
     [SerializeField, Min(0f)] private float moveSpeed = 20f;
     [SerializeField, Min(0f)] private float acceleration = 90f;
     [SerializeField, Min(0f)] private float deceleration = 110f;
@@ -47,9 +48,13 @@ public class CameraMovement : MonoBehaviour {
     private bool cursorInitialized;
     private Vector3 baseDamageShakeOffset;
     private float baseDamageShakeRemaining;
-    private const float BaseDamageShakeDuration = 0.18f;
+    private float baseDamageShakeDuration;
+    private float baseDamageShakeAmplitude;
+    private float baseDamageShakeFrequency;
+    private float baseDamageShakePhase;
 
     private void Awake(){
+        MMCameraShakeEvent.Register(OnBaseDamageShake);
         baseRotation = transform.rotation;
         initialHeight = targetHeight = transform.position.y;
         cameraYaw = baseRotation.eulerAngles.y;
@@ -90,6 +95,10 @@ public class CameraMovement : MonoBehaviour {
         cursorInitialized = false;
         transform.rotation = baseRotation;
         cameraYaw = baseRotation.eulerAngles.y;
+    }
+
+    private void OnDestroy(){
+        MMCameraShakeEvent.Unregister(OnBaseDamageShake);
     }
 
     private void OnApplicationFocus(bool hasFocus){
@@ -182,16 +191,30 @@ public class CameraMovement : MonoBehaviour {
         transform.position = position;
     }
 
-    public void PlayBaseDamageShake(){
-        baseDamageShakeRemaining = BaseDamageShakeDuration;
+    private void OnBaseDamageShake(float duration, float amplitude, float frequency,
+        float amplitudeX, float amplitudeY, float amplitudeZ, bool infinite,
+        MMChannelData channelData, bool useUnscaledTime){
+        if (!isActiveAndEnabled || channelData == null ||
+            channelData.MMChannelMode != MMChannelModes.Int ||
+            channelData.Channel != BaseDamageShakeChannel) return;
+
+        baseDamageShakeDuration = Mathf.Clamp(duration, 0.05f, 0.5f);
+        baseDamageShakeRemaining = baseDamageShakeDuration;
+        baseDamageShakeAmplitude = Mathf.Clamp(amplitude, 0f, 0.5f);
+        baseDamageShakeFrequency = Mathf.Clamp(frequency, 1f, 40f);
+        baseDamageShakePhase = Random.Range(0f, 100f);
     }
 
     private void LateUpdate(){
         if (baseDamageShakeRemaining <= 0f) return;
         baseDamageShakeRemaining = Mathf.Max(0f,
             baseDamageShakeRemaining - Time.unscaledDeltaTime);
-        float intensity = baseDamageShakeRemaining / BaseDamageShakeDuration;
-        Vector2 jitter = Random.insideUnitCircle * (0.075f * intensity);
+        float intensity = baseDamageShakeRemaining / baseDamageShakeDuration;
+        float sample = baseDamageShakePhase + Time.unscaledTime * baseDamageShakeFrequency;
+        Vector2 jitter = new Vector2(
+            Mathf.PerlinNoise(sample, 0.37f) * 2f - 1f,
+            Mathf.PerlinNoise(0.73f, sample) * 2f - 1f
+        ) * (baseDamageShakeAmplitude * intensity);
         baseDamageShakeOffset = transform.right * jitter.x + transform.up * jitter.y;
         transform.position += baseDamageShakeOffset;
     }

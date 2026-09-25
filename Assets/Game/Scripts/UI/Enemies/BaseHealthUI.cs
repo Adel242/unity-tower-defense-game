@@ -6,12 +6,15 @@ using UnityEngine.UI;
 public class BaseHealthUI : MonoBehaviour{
     [SerializeField] private TMP_Text healthText;
     [SerializeField] private Image damageFlash;
-    [SerializeField, Range(0f, 0.5f)] private float flashOpacity = 0.22f;
+    [SerializeField, Range(0f, 1f)] private float flashOpacity = 0.65f;
     [SerializeField, Min(0.05f)] private float flashDuration = 0.35f;
 
     private BaseHealth baseHealth;
     private MMF_Player hitFeedback;
-    private float flashRemaining;
+    private float flashAlpha;
+    private float lastImpactTime = -10f;
+    private float lastFeedbackTime = -10f;
+    private int flashVariant;
 
     private void Start(){
         baseHealth = FindFirstObjectByType<BaseHealth>();
@@ -24,7 +27,7 @@ public class BaseHealthUI : MonoBehaviour{
         RefreshText();
         if (damageFlash != null){
             damageFlash.raycastTarget = false;
-            damageFlash.color = new Color(0.65f, 0.025f, 0.035f, 0f);
+            damageFlash.color = new Color(1f, 1f, 1f, 0f);
         }
 
         if (healthText != null){
@@ -40,6 +43,10 @@ public class BaseHealthUI : MonoBehaviour{
                 UniformScaling = true,
                 AllowAdditivePlays = false
             });
+            hitFeedback.AddFeedback(new MMF_CameraShake{
+                Channel = CameraMovement.BaseDamageShakeChannel,
+                CameraShakeProperties = new MMCameraShakeProperties(0.3f, 0.35f, 24f)
+            });
             hitFeedback.Initialization();
             healthText.raycastTarget = false;
         }
@@ -50,22 +57,42 @@ public class BaseHealthUI : MonoBehaviour{
     }
 
     private void Update(){
-        if (flashRemaining <= 0f || damageFlash == null) return;
-        flashRemaining = Mathf.Max(0f, flashRemaining - Time.unscaledDeltaTime);
-        float pulse = flashRemaining / flashDuration;
-        damageFlash.color = new Color(0.65f, 0.025f, 0.035f, flashOpacity * pulse * pulse);
+        if (flashAlpha <= 0f || damageFlash == null) return;
+        flashAlpha = Mathf.MoveTowards(flashAlpha, 0f,
+            flashOpacity / flashDuration * Time.unscaledDeltaTime);
+        float brightness = flashOpacity > 0f ? flashAlpha / flashOpacity : 0f;
+        Color tint = Color.Lerp(new Color(0.7f, 0.6f, 0.6f), Color.white, brightness);
+        tint.a = flashAlpha;
+        damageFlash.color = tint;
     }
 
     private void OnHealthChanged(float remaining, float lost){
         RefreshText();
         if (lost <= 0f) return;
-        flashRemaining = flashDuration;
+        float now = Time.unscaledTime;
+        bool newBurst = now - lastImpactTime > flashDuration;
+        lastImpactTime = now;
+
+        if (newBurst && damageFlash != null){
+            // A burst keeps one orientation; rapid hits reinforce it instead of
+            // stacking or swapping identical splashes every frame.
+            flashVariant = (flashVariant + Random.Range(1, 4)) % 4;
+            RectTransform rect = damageFlash.rectTransform;
+            rect.localScale = new Vector3((flashVariant & 1) == 0 ? 1f : -1f, 1f, 1f);
+            rect.localRotation = Quaternion.Euler(0f, 0f,
+                (flashVariant & 2) == 0 ? 0f : 180f);
+        }
+
+        flashAlpha = newBurst
+            ? Mathf.Max(flashAlpha, flashOpacity * 0.78f)
+            : Mathf.Min(flashOpacity, flashAlpha + flashOpacity * 0.3f);
         if (damageFlash != null)
-            damageFlash.color = new Color(0.65f, 0.025f, 0.035f, flashOpacity);
-        hitFeedback?.PlayFeedbacks();
-        CameraMovement cameraMovement = Camera.main != null
-            ? Camera.main.GetComponent<CameraMovement>() : null;
-        cameraMovement?.PlayBaseDamageShake();
+            damageFlash.color = new Color(1f, 1f, 1f, flashAlpha);
+
+        if (now - lastFeedbackTime >= 0.15f){
+            lastFeedbackTime = now;
+            hitFeedback?.PlayFeedbacks();
+        }
     }
 
     private void RefreshText(){
