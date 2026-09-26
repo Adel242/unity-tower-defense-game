@@ -19,8 +19,6 @@ public class EnemyMovement : MonoBehaviour{
     private BaseHealth playerBase;
     private bool reachedDestination;
     private float speedMultiplier = 1f;
-    private Vector3[] laneWaypoints;
-    private int laneWaypointIndex;
 
     public Vector3 Velocity => agent != null ? agent.velocity : Vector3.zero;
 
@@ -73,8 +71,7 @@ private void Awake(){
             return;
         }
 
-        laneWaypoints = null;
-        laneWaypointIndex = 0;
+        Vector3 finalDestination = destination.position;
 
         if (Mathf.Abs(laneOffset) > 0.01f){
             NavMeshPath path = new NavMeshPath();
@@ -83,22 +80,24 @@ private void Awake(){
                 path.status == NavMeshPathStatus.PathComplete &&
                 path.corners.Length > 1){
                 Vector3[] corners = path.corners;
-                laneWaypoints = new Vector3[corners.Length - 1];
-                for (int index = 1; index < corners.Length; index++){
-                    Vector3 tangent = corners[Mathf.Min(index + 1, corners.Length - 1)]
-                        - corners[index - 1];
-                    tangent.y = 0f;
-                    Vector3 right = new Vector3(tangent.z, 0f, -tangent.x).normalized;
-                    Vector3 candidate = corners[index] + right * laneOffset;
-                    laneWaypoints[index - 1] = NavMesh.SamplePosition(candidate,
-                        out NavMeshHit hit, 0.35f, NavMesh.AllAreas)
-                        ? hit.position : corners[index];
+                Vector3 lastSegment = corners[corners.Length - 1]
+                    - corners[corners.Length - 2];
+                lastSegment.y = 0f;
+                if (lastSegment.sqrMagnitude > 0.0001f){
+                    Vector3 right = new Vector3(lastSegment.z, 0f,
+                        -lastSegment.x).normalized;
+                    Vector3 candidate = destination.position + right * laneOffset;
+                    if (NavMesh.SamplePosition(candidate, out NavMeshHit hit,
+                            0.35f, NavMesh.AllAreas)){
+                        finalDestination = hit.position;
+                    }
                 }
             }
         }
 
-        agent.SetDestination(laneWaypoints != null
-            ? laneWaypoints[0] : destination.position);
+        // A single destination lets NavMesh handle every bend. Chaining
+        // laterally shifted corners could make agents double back at turns.
+        agent.SetDestination(finalDestination);
         hasDestination = true;
     }
 
@@ -120,12 +119,6 @@ private void Awake(){
         }
 
         if (agent.hasPath && agent.velocity.sqrMagnitude > 0.01f){
-            return;
-        }
-
-        if (laneWaypoints != null && laneWaypointIndex < laneWaypoints.Length - 1){
-            laneWaypointIndex++;
-            agent.SetDestination(laneWaypoints[laneWaypointIndex]);
             return;
         }
 
