@@ -25,6 +25,94 @@ public static class SpringIslesMapBuilder
         new Rect(-11,5,22,4), new Rect(-11,-7,22,6), new Rect(-23,-9,6,8)
     };
 
+    [MenuItem("Tools/Spring Isles/Add enemy entrance marker")]
+    public static void AddEnemyEntranceMarker()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode ||
+            SceneManager.GetActiveScene().path != "Assets/Game/Scenes/Game.unity")
+            throw new InvalidOperationException("Open Game.unity outside Play Mode first.");
+
+        var map = GameObject.Find("Spring Isles - Santuario del Alba");
+        var spawn = GameObject.Find("SpawnZone");
+        if (map == null || spawn == null)
+            throw new InvalidOperationException("The Spring Isles map or SpawnZone is missing.");
+        if (map.transform.Find("Enemy entrance marker") != null)
+            return;
+
+        var materialPath = Output + "/EnemyEntranceMarker.mat";
+        var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+        if (material == null)
+        {
+            var shader = Shader.Find("Sprites/Default");
+            if (shader == null) throw new InvalidOperationException("Sprites/Default shader is missing.");
+            material = new Material(shader) { name = "Enemy entrance marker" };
+            AssetDatabase.CreateAsset(material, materialPath);
+        }
+
+        var root = Group("Enemy entrance marker", map.transform);
+        root.position = spawn.transform.position + Vector3.right * 3.8f + Vector3.up * .12f;
+        int ignoreRaycast = LayerMask.NameToLayer("Ignore Raycast");
+        root.gameObject.layer = ignoreRaycast;
+
+        var outline = new Color(.95f, .38f, .16f, .68f);
+        var highlight = new Color(1f, .76f, .37f, 1f);
+        var ring = new Vector3[48];
+        for (int i = 0; i < ring.Length; i++)
+        {
+            float angle = i * Mathf.PI * 2f / ring.Length;
+            ring[i] = new Vector3(Mathf.Cos(angle) * 1.55f, .03f,
+                Mathf.Sin(angle) * 1.55f);
+        }
+        CreateMarkerLine("Entrance seal", root, ring, .11f, outline, material, true);
+        CreateMarkerLine("Arrow toward the base", root, new[] {
+            new Vector3(-1f,.06f,-.9f), new Vector3(1.15f,.06f,0),
+            new Vector3(-1f,.06f,.9f)
+        }, .22f, highlight, material);
+        CreateMarkerLine("Second chevron", root, new[] {
+            new Vector3(-1.37f,.05f,-.55f), new Vector3(-.55f,.05f,0),
+            new Vector3(-1.37f,.05f,.55f)
+        }, .09f, outline, material);
+
+        var beam = CreateMarkerLine("Entrance beacon", root, new[] {
+            new Vector3(0,.1f,0), new Vector3(0,3.5f,0)
+        }, .22f, new Color(1f,.62f,.27f,.72f), material);
+        beam.widthCurve = new AnimationCurve(
+            new Keyframe(0,.9f), new Keyframe(.35f,.52f), new Keyframe(1,0));
+        var fade = new Gradient();
+        fade.SetKeys(new[] {
+            new GradientColorKey(highlight,0), new GradientColorKey(highlight,1)
+        }, new[] {
+            new GradientAlphaKey(.72f,0), new GradientAlphaKey(0,1)
+        });
+        beam.colorGradient = fade;
+
+        EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        EditorSceneManager.SaveScene(SceneManager.GetActiveScene());
+        Capture();
+        Debug.Log("Enemy entrance marker saved in Game.unity.");
+    }
+
+    private static LineRenderer CreateMarkerLine(string name, Transform parent,
+        Vector3[] points, float width, Color color, Material material, bool loop = false)
+    {
+        var child = Group(name, parent).gameObject;
+        child.layer = LayerMask.NameToLayer("Ignore Raycast");
+        var line = child.AddComponent<LineRenderer>();
+        line.sharedMaterial = material;
+        line.useWorldSpace = false;
+        line.positionCount = points.Length;
+        line.SetPositions(points);
+        line.loop = loop;
+        line.widthMultiplier = width;
+        line.startColor = color;
+        line.endColor = color;
+        line.numCapVertices = 4;
+        line.numCornerVertices = 4;
+        line.shadowCastingMode = ShadowCastingMode.Off;
+        line.receiveShadows = false;
+        return line;
+    }
+
     [MenuItem("Tools/Spring Isles/Create battlefield (once)")]
     public static void Build()
     {
@@ -150,6 +238,7 @@ public static class SpringIslesMapBuilder
         if (SceneView.lastActiveSceneView != null)
             SceneView.lastActiveSceneView.LookAt(new Vector3(0,0,1),Quaternion.Euler(55,0,0),42);
         Polish();
+        AddEnemyEntranceMarker();
         Debug.Log("Spring Isles authored and saved. Backup: " + backup);
     }
 
