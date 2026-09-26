@@ -6,6 +6,7 @@ public class EnemyHealth : MonoBehaviour{
     [SerializeField] private EnemyData enemyData;
     [SerializeField] private Image healthFill;
     [SerializeField] private DamagePopup damagePopupPrefab;
+    [SerializeField] private bool showDamagePopups = false;
 
     public event System.Action<EnemyHealth> Died;
 
@@ -24,8 +25,12 @@ public class EnemyHealth : MonoBehaviour{
     private float burnTickTimer;
     private HitFlashTarget[] hitFlashTargets;
     private float hitFlashRemaining;
+    private float nextHitFeedbackTime;
+    private float nextHealthBarUpdate;
     private const float BurnTickInterval = 0.5f;
     private const float HitFlashDuration = 0.01f;
+    private const float HitFeedbackInterval = 0.18f;
+    private const float HealthBarUpdateInterval = 0.05f;
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int ColorId = Shader.PropertyToID("_Color");
     private static Material sharedHitFlashMaterial;
@@ -70,21 +75,23 @@ public class EnemyHealth : MonoBehaviour{
         UpdateBurn();
         UpdateHitFlash();
 
-        if (!healthBarInitialized ||
+        if (!healthBarInitialized || Time.time < nextHealthBarUpdate ||
             (Mathf.Approximately(displayedHealthFill, targetHealthFill) &&
              Mathf.Approximately(displayedTrailFill, targetHealthFill))){
             return;
         }
 
+        nextHealthBarUpdate = Time.time + HealthBarUpdateInterval;
+
         displayedHealthFill = Mathf.MoveTowards(
             displayedHealthFill,
             targetHealthFill,
-            3.5f * Time.deltaTime
+            3.5f * HealthBarUpdateInterval
         );
         displayedTrailFill = Mathf.MoveTowards(
             displayedTrailFill,
             targetHealthFill,
-            0.85f * Time.deltaTime
+            0.85f * HealthBarUpdateInterval
         );
 
         SetBarFill(healthFill, displayedHealthFill);
@@ -103,15 +110,18 @@ public class EnemyHealth : MonoBehaviour{
         currentHealth = Mathf.Max(currentHealth, 0f);
 
         UpdateHealthBar();
-        ShowDamagePopup(damage);
-        PlayHitFlash();
+        if (showDamagePopups){ ShowDamagePopup(damage); }
 
         if (currentHealth <= 0f){
             Die();
             return;
         }
 
-        hitFeedbacks?.PlayFeedbacks(transform.position);
+        if (Time.time >= nextHitFeedbackTime){
+            nextHitFeedbackTime = Time.time + HitFeedbackInterval;
+            PlayHitFlash();
+            hitFeedbacks?.PlayFeedbacks(transform.position);
+        }
     }
 
     private void ConfigureHitFlash(){
@@ -497,7 +507,7 @@ public static class EnemyDeathVfx
         main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
         main.gravityModifier = 0.55f;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 36;
+        main.maxParticles = 24;
         main.stopAction = ParticleSystemStopAction.Destroy;
     }
 
@@ -506,7 +516,7 @@ public static class EnemyDeathVfx
         ParticleSystem.EmissionModule emission = particles.emission;
         emission.rateOverTime = 0f;
         emission.SetBursts(new[] {
-            new ParticleSystem.Burst(0f, 32)
+            new ParticleSystem.Burst(0f, 20)
         });
     }
 
@@ -522,15 +532,15 @@ public static class EnemyDeathVfx
     {
         ParticleSystem.MainModule main = particles.main;
         main.startColor = new ParticleSystem.MinMaxGradient(
-            new Color(0.48f, 0.04f, 0.03f, 1f),
-            new Color(0.95f, 0.18f, 0.10f, 1f)
+            new Color(0.32f, 0.006f, 0.005f, 1f),
+            new Color(0.65f, 0.025f, 0.012f, 1f)
         );
 
         Gradient fade = new Gradient();
         fade.SetKeys(
             new[] {
-                new GradientColorKey(new Color(1f, 0.45f, 0.35f), 0f),
-                new GradientColorKey(new Color(0.30f, 0.05f, 0.04f), 1f)
+                new GradientColorKey(new Color(0.88f, 0.06f, 0.025f), 0f),
+                new GradientColorKey(new Color(0.30f, 0.006f, 0.004f), 1f)
             },
             new[] {
                 new GradientAlphaKey(1f, 0f),

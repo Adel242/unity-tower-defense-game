@@ -5,7 +5,7 @@ using UnityEngine.AI;
 public class EnemySpawner : MonoBehaviour{
     [SerializeField] private BoxCollider spawnZone;
     [SerializeField] private Transform destinationPoint;
-    [SerializeField, Min(0f)] private float minimumSpawnDistance = 0.3f;
+    [SerializeField, Min(0f)] private float minimumSpawnDistance = 0.85f;
     public event System.Action<GameObject> EnemySpawned;
 
     public IEnumerator SpawnWave(
@@ -20,6 +20,7 @@ public class EnemySpawner : MonoBehaviour{
         if (enemyPrefab == null){ yield break; }
 
         spawnBatchSize = Mathf.Max(1, spawnBatchSize);
+        WaitForSeconds spawnDelay = new WaitForSeconds(timeBetweenEnemies);
         for (int i = 0; i < enemyCount; i++){
             Vector3 spawnPosition;
 
@@ -45,12 +46,15 @@ public class EnemySpawner : MonoBehaviour{
             EnemySpawned?.Invoke(enemy);
 
             if (movement != null){
-                movement.SetDestination(destinationPoint);
+                // Alternate sides of the same route; navigation keeps every
+                // waypoint on the baked enemy path.
+                float laneOffset = (i % 3 - 1) * 0.65f;
+                movement.SetDestination(destinationPoint, laneOffset);
             }
 
             bool batchCompleted = (i + 1) % spawnBatchSize == 0;
             if (i < enemyCount - 1 && batchCompleted){
-                yield return new WaitForSeconds(timeBetweenEnemies);
+                yield return spawnDelay;
             }
         }
     }

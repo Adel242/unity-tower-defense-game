@@ -11,8 +11,10 @@ public class FlameAttackData : TowerAttackData
     public void FireCone(Vector3 towerOrigin, Vector3 muzzlePosition,
         Vector3 targetPosition, float range, float damage)
     {
+        // Each active enemy is visited once, so direct cone attacks do not
+        // need a per-shot HashSet. Projectile impacts still use their set.
         ApplyCone(towerOrigin, muzzlePosition, targetPosition, range, damage,
-            new HashSet<EnemyHealth>());
+            null);
     }
 
     public override bool ApplyImpact(Vector3 attackOrigin, Vector3 impactPosition,
@@ -33,6 +35,14 @@ public class FlameAttackData : TowerAttackData
         float effectiveAngle = Mathf.Min(150f, coneAngle * RunUpgradeState.Current.Multiplier("area", this));
         forward.y = 0f;
         if (forward.sqrMagnitude < 0.0001f || range <= 0f) return;
+        forward.Normalize();
+        float rangeSquared = range * range;
+        float minimumDot = Mathf.Cos(effectiveAngle * 0.5f * Mathf.Deg2Rad);
+        float minimumDotSquared = minimumDot * minimumDot;
+        float burnRatio = RunUpgradeState.Current.Bonus("burn", this);
+        float burnDuration = burnRatio > 0f
+            ? 2.5f + RunUpgradeState.Current.Bonus("burn_duration", this)
+            : 0f;
 
         var activeEnemies = EnemyMovement.ActiveEnemies;
         for (int index = activeEnemies.Count - 1; index >= 0; index--)
@@ -42,17 +52,20 @@ public class FlameAttackData : TowerAttackData
             if ((enemyLayer.value & (1 << enemy.gameObject.layer)) == 0) continue;
             Vector3 direction = enemy.transform.position - attackOrigin;
             direction.y = 0f;
-            EnemyHealth health = enemy.GetComponent<EnemyHealth>();
+            float distanceSquared = direction.sqrMagnitude;
+            if (distanceSquared > rangeSquared) continue;
+            float forwardDot = Vector3.Dot(forward, direction);
+            if (forwardDot < 0f ||
+                forwardDot * forwardDot < distanceSquared * minimumDotSquared){
+                continue;
+            }
 
-            if (health != null && direction.magnitude <= range &&
-                Vector3.Angle(forward, direction) <= effectiveAngle * 0.5f &&
-                affectedEnemies.Add(health))
+            EnemyHealth health = enemy.GetComponent<EnemyHealth>();
+            if (health != null &&
+                (affectedEnemies == null || affectedEnemies.Add(health)))
             {
                 health.TakeDamage(directDamage);
-                float burnRatio = RunUpgradeState.Current.Bonus("burn", this);
                 if (burnRatio > 0f){
-                    float burnDuration = 2.5f +
-                        RunUpgradeState.Current.Bonus("burn_duration", this);
                     health.ApplyBurn(directDamage * burnRatio, burnDuration);
                 }
             }

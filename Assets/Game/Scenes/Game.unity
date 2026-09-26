@@ -1019,23 +1019,23 @@ MonoBehaviour:
   enemySpawner: {fileID: 1793314429}
   timeBetweenWaves: 10
   enemyPrefab: {fileID: 4663588816647234693, guid: 0764cf17c5c8c2c4badad5f2a5a698be, type: 3}
-  baseEnemyCount: 32
-  enemiesAddedPerWave: 4
+  baseEnemyCount: 24
+  enemiesAddedPerWave: 2.5
   enemyCountVariance: 0.14
   swarmCountMultiplier: 1.45
   fastCountMultiplier: 1.15
   specialCountMultiplier: 0.82
-  baseSpawnBatchSize: 2
-  initialSpawnInterval: 0.55
-  minimumSpawnInterval: 0.08
-  spawnIntervalDecay: 0.96
-  initialHealthMultiplier: 0.4
-  healthGrowthPerWave: 1.085
+  baseSpawnBatchSize: 1
+  initialSpawnInterval: 0.65
+  minimumSpawnInterval: 0.3
+  spawnIntervalDecay: 0.985
+  initialHealthMultiplier: 0.45
+  healthGrowthPerWave: 1.09
   swarmHealthMultiplier: 0.85
   fastHealthMultiplier: 0.9
   maximumHealthMultiplier: 1000000
-  speedAddedPerWave: 0.012
-  maximumSpeedMultiplier: 1.75
+  speedAddedPerWave: 0.013
+  maximumSpeedMultiplier: 1.7
   initialGoldRewardMultiplier: 0.5
   rewardGrowthEveryFiveWaves: 0.025
   specialRewardMultiplier: 1.1
@@ -12363,7 +12363,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemySpawner
   spawnZone: {fileID: 1426259665}
   destinationPoint: {fileID: 343056901}
-  minimumSpawnDistance: 0.3
+  minimumSpawnDistance: 0.85
 --- !u!1001 &1807747741
 PrefabInstance:
   m_ObjectHideFlags: 0

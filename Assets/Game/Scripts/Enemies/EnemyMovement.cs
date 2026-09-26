@@ -19,6 +19,8 @@ public class EnemyMovement : MonoBehaviour{
     private BaseHealth playerBase;
     private bool reachedDestination;
     private float speedMultiplier = 1f;
+    private Vector3[] laneWaypoints;
+    private int laneWaypointIndex;
 
     public Vector3 Velocity => agent != null ? agent.velocity : Vector3.zero;
 
@@ -31,6 +33,7 @@ private void Awake(){
     }
 
     agent.updateRotation = true;
+    agent.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
 }
 
     private void OnEnable(){
@@ -60,7 +63,7 @@ private void Awake(){
         CheckDestinationReached();
     }
 
-    public void SetDestination(Transform destination){
+    public void SetDestination(Transform destination, float laneOffset = 0f){
         if (destination == null){
             return;
         }
@@ -70,7 +73,32 @@ private void Awake(){
             return;
         }
 
-        agent.SetDestination(destination.position);
+        laneWaypoints = null;
+        laneWaypointIndex = 0;
+
+        if (Mathf.Abs(laneOffset) > 0.01f){
+            NavMeshPath path = new NavMeshPath();
+            if (NavMesh.CalculatePath(transform.position, destination.position,
+                    NavMesh.AllAreas, path) &&
+                path.status == NavMeshPathStatus.PathComplete &&
+                path.corners.Length > 1){
+                Vector3[] corners = path.corners;
+                laneWaypoints = new Vector3[corners.Length - 1];
+                for (int index = 1; index < corners.Length; index++){
+                    Vector3 tangent = corners[Mathf.Min(index + 1, corners.Length - 1)]
+                        - corners[index - 1];
+                    tangent.y = 0f;
+                    Vector3 right = new Vector3(tangent.z, 0f, -tangent.x).normalized;
+                    Vector3 candidate = corners[index] + right * laneOffset;
+                    laneWaypoints[index - 1] = NavMesh.SamplePosition(candidate,
+                        out NavMeshHit hit, 0.35f, NavMesh.AllAreas)
+                        ? hit.position : corners[index];
+                }
+            }
+        }
+
+        agent.SetDestination(laneWaypoints != null
+            ? laneWaypoints[0] : destination.position);
         hasDestination = true;
     }
 
@@ -92,6 +120,12 @@ private void Awake(){
         }
 
         if (agent.hasPath && agent.velocity.sqrMagnitude > 0.01f){
+            return;
+        }
+
+        if (laneWaypoints != null && laneWaypointIndex < laneWaypoints.Length - 1){
+            laneWaypointIndex++;
+            agent.SetDestination(laneWaypoints[laneWaypointIndex]);
             return;
         }
 

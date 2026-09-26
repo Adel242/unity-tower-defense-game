@@ -133,9 +133,7 @@ $waveRows = for ($wave = 1; $wave -le $MaxWave; $wave++) {
     )
     $count = [Math]::Min(400, [Math]::Max(1, [int]$count))
 
-    $batchSize = [int]$baseBatchSize + [Math]::Floor($step / 12)
-    if ($swarm) { $batchSize++ }
-    $batchSize = [Math]::Min(5, [Math]::Max(1, $batchSize))
+    $batchSize = [Math]::Max(1, [int]$baseBatchSize)
 
     $healthMultiplier = $initialHealth * [Math]::Pow($healthGrowth, $step)
     if ($swarm) { $healthMultiplier *= $swarmHealth }

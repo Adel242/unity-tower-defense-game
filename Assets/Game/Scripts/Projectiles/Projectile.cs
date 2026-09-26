@@ -31,13 +31,11 @@ public class Projectile : MonoBehaviour{
     private TrailRenderer energyTrail;
     private Material energyTrailMaterial;
     private Vector3 defaultScale;
-    private float visualPulseOffset;
 
     private void Awake(){
         defaultScale = transform.localScale;
         projectileRenderers = GetComponentsInChildren<Renderer>();
         CreateEnergyTrail();    
-        visualPulseOffset = Random.Range(0f, Mathf.PI * 2f);
     }
 
     public void SetPool(ProjectilePool newPool){
@@ -76,8 +74,6 @@ public class Projectile : MonoBehaviour{
     }
 
     private void Update(){
-        UpdateArcaneVisual();
-
         if (ballisticMovement)
         {
             ballisticElapsed += Time.deltaTime;
@@ -275,27 +271,15 @@ public class Projectile : MonoBehaviour{
         }
 
         if (visualStyle == ProjectileVisualStyle.Arcane){
-            transform.localScale = defaultScale * 1.75f;
-            SetProjectileColor(new Color(0.65f, 0.12f, 1f, 1f));
+            SetProjectileRenderersVisible(false);
             ConfigureEnergyTrail(
-                0.32f,
-                0.34f,
-                0.04f,
-                new Color(0.75f, 0.2f, 1f, 0.95f),
-                new Color(0.15f, 0.75f, 1f, 0f)
+                0.28f,
+                0.16f,
+                0.015f,
+                new Color(0.72f, 0.22f, 1f, 1f),
+                new Color(0.38f, 0.08f, 0.85f, 0f)
             );
         }
-    }
-
-    private void UpdateArcaneVisual(){
-        if (visualStyle != ProjectileVisualStyle.Arcane || attackData == null){
-            return;
-        }
-
-        float pulse = 1.75f + Mathf.Sin(
-            Time.time * 12f + visualPulseOffset
-        ) * 0.18f;
-        transform.localScale = defaultScale * pulse;
     }
 
     private void SetProjectileColor(Color color){

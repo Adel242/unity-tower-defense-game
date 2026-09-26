@@ -195,19 +195,19 @@ public static class TowerAttackVfx
         ParticleSystem.MainModule main = particles.main;
         main.duration = 0.3f;
         main.loop = false;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(0.25f, 0.4f);
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.22f, 0.34f);
         main.startSpeed = new ParticleSystem.MinMaxCurve(range * 1.8f, range * 2.5f);
         main.startSize = new ParticleSystem.MinMaxCurve(0.25f, 0.65f);
         main.startColor = new ParticleSystem.MinMaxGradient(
             new Color(1f, 0.12f, 0.01f, 1f),
             new Color(1f, 0.75f, 0.05f, 1f)
         );
-        main.maxParticles = 48;
+        main.maxParticles = 24;
         main.stopAction = ParticleSystemStopAction.Destroy;
 
         ParticleSystem.EmissionModule emission = particles.emission;
         emission.rateOverTime = 0f;
-        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 40) });
+        emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 20) });
 
         ParticleSystem.ShapeModule shape = particles.shape;
         shape.shapeType = ParticleSystemShapeType.Cone;

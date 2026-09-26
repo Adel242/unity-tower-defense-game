@@ -9,23 +9,23 @@ public class WaveManager : MonoBehaviour{
     [SerializeField] private float timeBetweenWaves = 10f;
     [Header("Infinite waves")]
     [SerializeField] private GameObject enemyPrefab;
-    [SerializeField, Min(1)] private int baseEnemyCount = 32;
-    [SerializeField, Min(0f)] private float enemiesAddedPerWave = 4f;
+    [SerializeField, Min(1)] private int baseEnemyCount = 24;
+    [SerializeField, Min(0f)] private float enemiesAddedPerWave = 2.5f;
     [SerializeField, Range(0f, 0.4f)] private float enemyCountVariance = 0.14f;
     [SerializeField, Min(1f)] private float swarmCountMultiplier = 1.45f;
     [SerializeField, Min(1f)] private float fastCountMultiplier = 1.15f;
     [SerializeField, Range(0.1f, 1f)] private float specialCountMultiplier = 0.82f;
-    [SerializeField, Min(1)] private int baseSpawnBatchSize = 2;
-    [SerializeField, Min(0.01f)] private float initialSpawnInterval = 0.55f;
-    [SerializeField, Min(0.01f)] private float minimumSpawnInterval = 0.08f;
-    [SerializeField, Range(0.8f, 1f)] private float spawnIntervalDecay = 0.96f;
-    [SerializeField, Min(0.1f)] private float initialHealthMultiplier = 0.4f;
-    [SerializeField, Min(1f)] private float healthGrowthPerWave = 1.085f;
+    [SerializeField, Min(1)] private int baseSpawnBatchSize = 1;
+    [SerializeField, Min(0.01f)] private float initialSpawnInterval = 0.65f;
+    [SerializeField, Min(0.01f)] private float minimumSpawnInterval = 0.3f;
+    [SerializeField, Range(0.8f, 1f)] private float spawnIntervalDecay = 0.985f;
+    [SerializeField, Min(0.1f)] private float initialHealthMultiplier = 0.45f;
+    [SerializeField, Min(1f)] private float healthGrowthPerWave = 1.09f;
     [SerializeField, Range(0.1f, 1f)] private float swarmHealthMultiplier = 0.85f;
     [SerializeField, Range(0.1f, 1f)] private float fastHealthMultiplier = 0.9f;
     [SerializeField, Min(1f)] private float maximumHealthMultiplier = 1000000f;
-    [SerializeField, Min(0f)] private float speedAddedPerWave = 0.012f;
-    [SerializeField, Min(0.1f)] private float maximumSpeedMultiplier = 1.75f;
+    [SerializeField, Min(0f)] private float speedAddedPerWave = 0.013f;
+    [SerializeField, Min(0.1f)] private float maximumSpeedMultiplier = 1.7f;
     [SerializeField, Min(0f)] private float initialGoldRewardMultiplier = 0.5f;
     [SerializeField, Min(0f)] private float rewardGrowthEveryFiveWaves = 0.025f;
     [SerializeField, Min(1f)] private float specialRewardMultiplier = 1.1f;
@@ -552,9 +552,7 @@ public class WaveManager : MonoBehaviour{
         );
         enemyCount = Mathf.Clamp(enemyCount, 1, 400);
 
-        int batchSize = baseSpawnBatchSize + step / 12;
-        if (swarmWave){ batchSize++; }
-        batchSize = Mathf.Clamp(batchSize, 1, 5);
+        int batchSize = Mathf.Max(1, baseSpawnBatchSize);
 
         float health = initialHealthMultiplier * Mathf.Pow(healthGrowthPerWave, step);
         if (swarmWave){ health *= swarmHealthMultiplier; }
