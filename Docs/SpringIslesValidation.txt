@@ -1,0 +1,10 @@
+Spawn 0: sampled=True, complete=True, corners=10
+Spawn 1: sampled=True, complete=True, corners=10
+Spawn 2: sampled=True, complete=True, corners=10
+Spawn 3: sampled=True, complete=True, corners=10
+Spawn 4: sampled=True, complete=True, corners=10
+Spawn 5: sampled=True, complete=True, corners=10
+Spawn 6: sampled=True, complete=True, corners=10
+Spawn 7: sampled=True, complete=True, corners=10
+Spawn 8: sampled=True, complete=True, corners=10
+Complete paths: 9/9; supported 2m cells: 67; missing scripts: 0; unsupported/missing materials: 0

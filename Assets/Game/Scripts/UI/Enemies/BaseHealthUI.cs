@@ -6,7 +6,9 @@ using UnityEngine.UI;
 public class BaseHealthUI : MonoBehaviour{
     [SerializeField] private TMP_Text healthText;
     [SerializeField] private Image damageFlash;
-    [SerializeField, Range(0f, 1f)] private float flashOpacity = 0.65f;
+    [SerializeField] private Image centerFlash;
+    [SerializeField, Range(0f, 1f)] private float flashOpacity = 0.95f;
+    [SerializeField, Range(0f, 0.35f)] private float centerFlashOpacity = 0.16f;
     [SerializeField, Min(0.05f)] private float flashDuration = 0.35f;
 
     private BaseHealth baseHealth;
@@ -28,6 +30,10 @@ public class BaseHealthUI : MonoBehaviour{
         if (damageFlash != null){
             damageFlash.raycastTarget = false;
             damageFlash.color = new Color(1f, 1f, 1f, 0f);
+        }
+        if (centerFlash != null){
+            centerFlash.raycastTarget = false;
+            centerFlash.color = new Color(0.72f, 0.04f, 0.05f, 0f);
         }
 
         if (healthText != null){
@@ -57,13 +63,16 @@ public class BaseHealthUI : MonoBehaviour{
     }
 
     private void Update(){
-        if (flashAlpha <= 0f || damageFlash == null) return;
-        flashAlpha = Mathf.MoveTowards(flashAlpha, 0f,
+        if (flashAlpha <= 0f) return;
+        flashAlpha = flashOpacity <= 0f ? 0f : Mathf.MoveTowards(flashAlpha, 0f,
             flashOpacity / flashDuration * Time.unscaledDeltaTime);
-        float brightness = flashOpacity > 0f ? flashAlpha / flashOpacity : 0f;
-        Color tint = Color.Lerp(new Color(0.7f, 0.6f, 0.6f), Color.white, brightness);
-        tint.a = flashAlpha;
-        damageFlash.color = tint;
+        if (damageFlash != null)
+            damageFlash.color = new Color(1f, 1f, 1f, flashAlpha);
+        if (centerFlash != null){
+            float intensity = flashOpacity > 0f ? flashAlpha / flashOpacity : 0f;
+            centerFlash.color = new Color(0.72f, 0.04f, 0.05f,
+                centerFlashOpacity * intensity);
+        }
     }
 
     private void OnHealthChanged(float remaining, float lost){
@@ -84,10 +93,13 @@ public class BaseHealthUI : MonoBehaviour{
         }
 
         flashAlpha = newBurst
-            ? Mathf.Max(flashAlpha, flashOpacity * 0.78f)
+            ? Mathf.Max(flashAlpha, flashOpacity * 0.92f)
             : Mathf.Min(flashOpacity, flashAlpha + flashOpacity * 0.3f);
         if (damageFlash != null)
             damageFlash.color = new Color(1f, 1f, 1f, flashAlpha);
+        if (centerFlash != null)
+            centerFlash.color = new Color(0.72f, 0.04f, 0.05f,
+                centerFlashOpacity * flashAlpha / Mathf.Max(0.01f, flashOpacity));
 
         if (now - lastFeedbackTime >= 0.15f){
             lastFeedbackTime = now;
