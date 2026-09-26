@@ -465,6 +465,7 @@ public static class EnemyDeathVfx
     private const string ParticleShader =
         "Universal Render Pipeline/Particles/Unlit";
     private static Material sharedDeathMaterial;
+    private static bool missingShaderLogged;
 
     public static void Play(Vector3 position)
     {
@@ -571,14 +572,45 @@ public static class EnemyDeathVfx
 
     private static void ConfigureRenderer(GameObject effectObject)
     {
-        Shader shader = Shader.Find(ParticleShader);
-
-        if (shader == null){
-            return;
-        }
-
         if (sharedDeathMaterial == null){
-            sharedDeathMaterial = new Material(shader);
+            Shader shader = Shader.Find(ParticleShader);
+            if (shader == null || !shader.isSupported){
+                shader = Shader.Find("Universal Render Pipeline/Unlit");
+            }
+            if (shader == null || !shader.isSupported){
+                shader = Shader.Find("Sprites/Default");
+            }
+            if (shader == null || !shader.isSupported){
+                if (!missingShaderLogged){
+                    Debug.LogError("Enemy death VFX has no supported shader.");
+                    missingShaderLogged = true;
+                }
+                effectObject.GetComponent<ParticleSystemRenderer>().enabled = false;
+                return;
+            }
+
+            sharedDeathMaterial = new Material(shader){
+                name = "Enemy Blood Particles (Runtime)",
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            // Keep both the material and particle tint red so a fallback
+            // shader cannot turn the death burst pink or white.
+            Color bloodTint = new Color(0.85f, 0.08f, 0.025f, 1f);
+            if (sharedDeathMaterial.HasProperty("_BaseColor")){
+                sharedDeathMaterial.SetColor("_BaseColor", bloodTint);
+            }
+            if (sharedDeathMaterial.HasProperty("_Color")){
+                sharedDeathMaterial.SetColor("_Color", bloodTint);
+            }
+            if (sharedDeathMaterial.HasProperty("_BaseMap")){
+                sharedDeathMaterial.SetTexture("_BaseMap", Texture2D.whiteTexture);
+            }
+            if (sharedDeathMaterial.HasProperty("_MainTex")){
+                sharedDeathMaterial.SetTexture("_MainTex", Texture2D.whiteTexture);
+            }
+            if (sharedDeathMaterial.HasProperty("_EmissionColor")){
+                sharedDeathMaterial.SetColor("_EmissionColor", Color.black);
+            }
         }
         ParticleSystemRenderer particleRenderer =
             effectObject.GetComponent<ParticleSystemRenderer>();
