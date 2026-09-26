@@ -169,3 +169,11 @@ Packages/packages-lock.json linguist-generated
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
+# Unity also serializes these .asset files as binary; YAML line-ending rules corrupt them.
+**/IslandTerrain.asset       -text -eol -diff -merge
+**/TSI_Terrain_0[1-4].asset  -text -eol -diff -merge
+**/SWS_DioramaTerrain.asset  -text -eol -diff -merge
+**/SW3?Demo?Island.asset     -text -eol -diff -merge
+**/EnemyRoute.asset          -text -eol -diff -merge
+**/NavMesh-Navigation.asset  -text -eol -diff -merge
+**/*LightingData.asset       -text -eol -diff -merge
