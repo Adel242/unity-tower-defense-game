@@ -318,6 +318,8 @@ internal sealed class LightningArcEffect : MonoBehaviour
 
 public static class TowerAttackAudio
 {
+    public static UnityEngine.Audio.AudioMixerGroup SoundOutputGroup { get; set; }
+
     private const float MaximumShotDuration = 1.1f;
     private const float MaximumImpactDuration = 0.65f;
     private const float MaximumPlacementDuration = 0.65f;
@@ -448,6 +450,7 @@ public static class TowerAttackAudio
         source.playOnAwake = false;
         source.loop = false;
         source.clip = clip;
+        source.outputAudioMixerGroup = SoundOutputGroup;
         source.volume = volume;
         source.spatialBlend = spatialBlend;
         source.rolloffMode = AudioRolloffMode.Linear;
@@ -468,6 +471,7 @@ public static class TowerAttackAudio
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetState()
     {
+        SoundOutputGroup = null;
         ActiveSounds.Clear();
         LastPlayTimeByClip.Clear();
     }
