@@ -37,6 +37,11 @@ namespace MoreMountains.Feedbacks
 		/// <param name="owner"></param>
 		public static void MigrateCurve(AnimationCurve oldCurve, MMTweenType newTweenType, MMF_Player owner)
 		{
+			// Newly created feedbacks may not have a deprecated curve to migrate.
+			if (oldCurve == null || newTweenType == null)
+			{
+				return;
+			}
 			if ((oldCurve.keys.Length > 0) && (!newTweenType.Initialized))
 			{
 				newTweenType.Curve = oldCurve;

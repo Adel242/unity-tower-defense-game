@@ -19,7 +19,7 @@ MonoBehaviour:
   impactVolume: 0.3
   arcHeight: 1.5
   gravity: 35
-  splashDamage: 6
+  splashDamage: 5
   splashRadius: 2.75
   enemyLayer:
     serializedVersion: 2

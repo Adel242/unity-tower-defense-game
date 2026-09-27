@@ -17,7 +17,7 @@ MonoBehaviour:
   shotVolume: 0.352
   impactSound: {fileID: 0}
   impactVolume: 0.187
-  maxBounces: 3
+  maxBounces: 2
   bounceRange: 3
   enemyLayer:
     serializedVersion: 2

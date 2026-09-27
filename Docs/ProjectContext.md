@@ -1,6 +1,6 @@
 # Contexto breve del proyecto
 
-Actualizado: 2026-09-22. Índice para trabajo enfocado; verificar valores en los assets actuales.
+Actualizado: 2026-09-27. Índice para trabajo enfocado; verificar valores en los assets actuales.
 
 ## Entorno y dirección
 
@@ -22,6 +22,8 @@ Rutas siguientes relativas a `Assets/Game/Scripts`:
 | Proyectiles | `Projectiles/Projectile.cs`, `Projectiles/ProjectilePool.cs` |
 | Enemigos | `Enemies/EnemySpawner.cs`, `EnemyMovement.cs`, `EnemyHealth.cs`, `EnemyData.cs` |
 | Oleadas | `Waves/WaveManager.cs`, `WaveData.cs`, `WaveUI.cs`, `WaveProgressBar.cs` |
+| Atmósfera de oleadas especiales | `Waves/SpecialWaveAtmosphere.cs`: cada quinta oleada oscurece y enfría gradualmente la luz direccional; la restaura al terminar. No activa niebla global. `Preview In Play Mode` permite verla y ajustar color/intensidad en vivo sin avanzar oleadas; apagarlo tras probar. |
+| Selección de mejoras | `UI/HUD/UpgradeSelectionPanel.cs`; `WaveManager` solo decide cuándo ofrecerlas y espera la elección |
 | Vida de base | `Base/BaseHealth.cs`, `UI/Enemies/BaseHealthUI.cs` |
 | Números de daño | `UI/Enemies/DamagePopup.cs`, `DamagePopupPool.cs` |
 
@@ -30,10 +32,11 @@ Rutas siguientes relativas a `Assets/Game/Scripts`:
 ## Decisiones y estado actual
 
 - Cinco torres del menú: básica, cañón, rayos, fuego y arcana. Arrow es un asset antiguo, no una sexta opción añadida al HUD.
-- Oleadas infinitas variables: tendencia 24 + 2,5 por oleada con oscilación determinista ±14%; hordas x1,45 enemigos y 85% de vida, rápidas x1,15 y 90% de vida, élites x0,82 con más vida. Aparición individual cada 0,65–0,30 s; vida inicial x0,45 y +9% por oleada, velocidad máxima x1,7, cantidad máxima 400. Recompensa x0,5, +0,025 cada cinco y élites x1,1. `EnemyMovement.ActiveEnemies` evita búsquedas por tag. Los zombis alternan tres destinos finales laterales dentro del NavMesh y usan evasión de baja calidad; NavMesh resuelve las curvas sin waypoints desplazados.
-- Oro inicial 500. Precios: básica 50, cañón 100, rayos 120, fuego 75, arcana 130. Daño/cadencia actuales: 5/2,2; 14/0,9; 6/1,8; 2,5/3,2; 38/0,65. El cañón hace 6 de splash en radio 2,75. Modelo aproximado en `Docs/Balance.md` y `Tools/AnalyzeBalance.ps1`: oro invertido, mezcla de torres, AoE/rebotes/cono, DPS, vida grupal y tiempo disponible; los supuestos requieren comprobarse en partida.
+- Oleadas infinitas variables: tendencia 24 + 2,5 por oleada con oscilación determinista ±14%; hordas x1,45 enemigos y 85% de vida, rápidas x1,15 y 90% de vida, élites x0,82 con más vida. Aparición individual cada 0,65–0,30 s; vida inicial x0,55 y +8% por oleada, velocidad máxima x1,7, cantidad máxima 400. Recompensa x0,35, +0,025 cada cinco y élites x1,1. `EnemyMovement.ActiveEnemies` evita búsquedas por tag. Los zombis alternan tres destinos finales laterales dentro del NavMesh y usan evasión de baja calidad; NavMesh resuelve las curvas sin waypoints desplazados.
+- Oro inicial 500. Precios: básica 50, cañón 100, rayos 120, fuego 75, arcana 130. Daño/cadencia actuales: 5/2,2; 14/0,9; 6/1,8; 2,5/3,2; 38/0,65. El cañón hace 5 de splash en radio 2,75; rayos alcanza al objetivo y hasta otros 2 por rebote. Modelo aproximado en `Docs/Balance.md` y `Tools/AnalyzeBalance.ps1`: oro invertido, mezcla de torres, AoE/rebotes/cono, DPS, vida grupal y tiempo disponible; los supuestos requieren comprobarse en partida.
 - Construcción: cuadrícula de 2 unidades, una torre por casilla. Ocupación por coordenadas, no por colliders de selección. Refresh al mostrar y construir; una futura venta/movimiento debe refrescarla. Se conserva validación de soporte del terreno.
 - Escenario Spring Isles: `Game.unity` contiene `Spring Isles - Santuario del Alba`, con Terrain pintado (césped, tierra, piedra y arena), tres terrazas elevadas construibles y una ruta baja en S para enemigos. El NavMesh está en `Assets/Game/Environment/SpringIsles/EnemyRoute.asset`; la ruta solo usa colliders invisibles en la capa `EnemyPath`. Entrada, destino, base y cámara ya están reposicionados. El blockout anterior queda desactivado en la jerarquía y hay una copia de la escena en `Assets/Game/MapBackups/GameBeforeSpringIsles.unity`. Prefabs, vegetación y terreno son editables en la escena; `Tools/Spring Isles` contiene el generador de una sola vez y la validación, no se reconstruye en Play.
+- Estilo visual de Game: iluminación ambiental fría y atenuada, luz direccional lunar (intensidad 0,72) y volumen global `Gothic Global Volume` con perfil editable `Environment/GothicGameProfile.asset` (ACES, ajustes de color, balance blanco frío, viñeta suave y Bloom sutil). Niebla global desactivada. `Spring Isles - Gothic water surface` usa un plano estático con el shader URP de agua de ToonScapes, material separado y oscuro con espuma normalizada; dos luces puntuales cálida/violeta en entrada y santuario complementan la lunar sin sombras en tiempo real.
 - La entrada enemiga tiene un sello y flecha ámbar estáticos bajo `Spring Isles - Santuario del Alba/Enemy entrance marker`. No posee collider y usa la capa `Ignore Raycast`; marca el primer tramo sin bloquear clics ni navegación. Se puede mover o ajustar en la escena.
 - El clic de colocación queda consumido para impedir seleccionar involuntariamente la torre recién construida. Se cancela construcción al quedar sin dinero suficiente.
 - El panel de datos de torre se usa solo como tooltip de los botones de construcción. Seleccionar una torre muestra un botón de venta en el HUD; devuelve 70% del coste efectivo, destruye su contenedor de feedback y libera la casilla.
