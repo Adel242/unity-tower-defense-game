@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
+using TMPro;
 
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -8,6 +10,13 @@ using UnityEngine.InputSystem;
 public class PauseMenuController : MonoBehaviour{
     public GameObject pauseMenuUI;
     public GameObject pauseBackground;
+    [SerializeField] private GameObject actionConfirmation;
+    [SerializeField] private GameObject cancelConfirmationButton;
+    [SerializeField] private CanvasGroup[] menuControls;
+    [SerializeField] private TMP_Text confirmationText;
+    private GameObject previousSelection;
+    private bool changingScene;
+    private string pendingScene;
 
     private TowerPlacementManager towerPlacementManager;
     private OptionsMenuController optionsMenuController;
@@ -16,6 +25,7 @@ public class PauseMenuController : MonoBehaviour{
     private bool gameIsPaused;
 
     private void Start(){
+        actionConfirmation.SetActive(false);
         pauseMenuUI.SetActive(false);
 
         if (pauseBackground != null){
@@ -56,6 +66,11 @@ public class PauseMenuController : MonoBehaviour{
 #endif
 
         if (!escapePressed){
+            return;
+        }
+
+        if (actionConfirmation.activeSelf){
+            CancelConfirmation();
             return;
         }
 
@@ -110,6 +125,7 @@ public class PauseMenuController : MonoBehaviour{
     }
 
     public void ResumeGame(){
+        if (actionConfirmation.activeSelf) return;
         pauseMenuUI.SetActive(false);
 
         if (pauseBackground != null){
@@ -121,16 +137,49 @@ public class PauseMenuController : MonoBehaviour{
     }
 
     public void RestartLevel(){
-        Time.timeScale = 1f;
-
-        SceneManager.LoadScene(
-            SceneManager.GetActiveScene().name
-        );
+        ShowConfirmation("Game", "¿Seguro que quieres reiniciar la partida?");
     }
 
     public void GoToMainMenu(){
+        ShowConfirmation("MainMenu", "¿Seguro que quieres salir al menú principal?");
+    }
+
+    private void ShowConfirmation(string sceneName, string question){
+        if (!gameIsPaused || actionConfirmation.activeSelf) return;
+
+        pendingScene = sceneName;
+        confirmationText.text = question;
+        previousSelection = EventSystem.current != null
+            ? EventSystem.current.currentSelectedGameObject : null;
+        foreach (CanvasGroup controls in menuControls){
+            controls.interactable = false;
+            controls.blocksRaycasts = false;
+        }
+        actionConfirmation.SetActive(true);
+        if (EventSystem.current != null){
+            EventSystem.current.SetSelectedGameObject(cancelConfirmationButton);
+        }
+    }
+
+    public void CancelConfirmation(){
+        if (changingScene) return;
+        pendingScene = null;
+        actionConfirmation.SetActive(false);
+        foreach (CanvasGroup controls in menuControls){
+            controls.interactable = true;
+            controls.blocksRaycasts = true;
+        }
+        if (EventSystem.current != null){
+            EventSystem.current.SetSelectedGameObject(previousSelection);
+        }
+    }
+
+    public void ConfirmAction(){
+        if (!actionConfirmation.activeSelf || changingScene || string.IsNullOrEmpty(pendingScene)) return;
+        changingScene = true;
         Time.timeScale = 1f;
-        SceneManager.LoadScene("MainMenu");
+        // Unload gameplay and its additive UI together for either destination.
+        SceneManager.LoadScene(pendingScene, LoadSceneMode.Single);
     }
 
     public void QuitGame(){

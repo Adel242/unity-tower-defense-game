@@ -1,8 +1,30 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public class MainMenu : MonoBehaviour
 {
+    [SerializeField] private OptionsMenuController optionsMenu;
+    [SerializeField] private ResolutionController resolutionMenu;
+
+    private void Start()
+    {
+        optionsMenu.ResetPanels();
+        resolutionMenu.ResetPanel();
+    }
+
+    private void Update()
+    {
+#if ENABLE_INPUT_SYSTEM
+        bool escapePressed = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+#else
+        bool escapePressed = Input.GetKeyDown(KeyCode.Escape);
+#endif
+        if (escapePressed && !resolutionMenu.HandleEscape()) optionsMenu.HandleEscape();
+    }
+
     // Botón "JUGAR"
     public void PlayGame()
     {
@@ -14,7 +36,7 @@ public class MainMenu : MonoBehaviour
     public void OpenOptions()
     {
         Debug.Log("Abriendo menú de opciones...");
-        SceneManager.LoadScene("PauseMenu");
+        optionsMenu.OpenOptions();
     }
 
     // Botón "SALIR"

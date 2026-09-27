@@ -70,7 +70,7 @@ public class ResolutionController : MonoBehaviour{
         resolutionDropdown.ClearOptions();
 
         List<string> options = new List<string>();
-        int currentIndex = 0;
+        int currentIndex = -1;
 
         for (int i = 0; i < resolutions.GetLength(0); i++){
             string option = resolutions[i, 0] + " x " + resolutions[i, 1];
@@ -83,8 +83,13 @@ public class ResolutionController : MonoBehaviour{
             }
         }
 
+        // Keep custom/windowed resolutions when opening settings or changing display mode.
+        if (currentIndex < 0){
+            currentIndex = options.Count;
+            options.Add(Screen.width + " x " + Screen.height);
+        }
         resolutionDropdown.AddOptions(options);
-        resolutionDropdown.value = currentIndex;
+        resolutionDropdown.SetValueWithoutNotify(currentIndex);
         resolutionDropdown.RefreshShownValue();
 
         resolutionDropdown.onValueChanged.RemoveAllListeners();
@@ -97,8 +102,8 @@ public class ResolutionController : MonoBehaviour{
         Debug.Log("=== ON RESOLUTION CHANGED ===");
         Debug.Log("Índice seleccionado: " + index);
 
-        int width = resolutions[index, 0];
-        int height = resolutions[index, 1];
+        int width = index >= 0 && index < resolutions.GetLength(0) ? resolutions[index, 0] : Screen.width;
+        int height = index >= 0 && index < resolutions.GetLength(0) ? resolutions[index, 1] : Screen.height;
 
         Debug.Log("Cambiando a: " + width + "x" + height);
         FullScreenMode screenMode =
@@ -142,9 +147,12 @@ public class ResolutionController : MonoBehaviour{
 
     public void OpenResolution(){
         Debug.Log("=== OPEN RESOLUTION ===");
+        SetupDropdown();
+        SetupScreenModeDropdown();
 
         if (resolutionPanel != null){
             resolutionPanel.SetActive(true);
+            OptionsMenuController.FocusPanel(resolutionPanel);
             Debug.Log("ResolutionPanel activado");
         }
 
@@ -170,6 +178,7 @@ public class ResolutionController : MonoBehaviour{
 
         if (optionsPanel != null){
             optionsPanel.SetActive(true);
+            OptionsMenuController.FocusPanel(optionsPanel);
             Debug.Log("OptionsPanel activado");
         }
     }

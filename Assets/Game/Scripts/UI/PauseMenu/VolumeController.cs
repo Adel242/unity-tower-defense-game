@@ -24,6 +24,7 @@ public class MasterVolumeController : MonoBehaviour{
 
         volumeSlider.minValue = 0f;
         volumeSlider.maxValue = 1f;
+        volumeSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat(MusicVolumeParameter, volumeSlider.value));
 
         volumeSlider.onValueChanged.AddListener(SetMusicVolume);
         SetMusicVolume(volumeSlider.value);
@@ -32,6 +33,7 @@ public class MasterVolumeController : MonoBehaviour{
             TowerAttackAudio.SoundOutputGroup = soundOutputGroup;
             soundSlider.minValue = 0f;
             soundSlider.maxValue = 1f;
+            soundSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat(SoundVolumeParameter, soundSlider.value));
             soundSlider.onValueChanged.AddListener(SetSoundVolume);
             SetSoundVolume(soundSlider.value);
         }
@@ -47,6 +49,7 @@ public class MasterVolumeController : MonoBehaviour{
     }
 
     private void SetMusicVolume(float volume){
+        PlayerPrefs.SetFloat(MusicVolumeParameter, volume);
         float volumeInDecibels = volume <= 0f
             ? MutedDecibels
             : Mathf.Log10(volume * MaximumMusicGain) * 20f;
@@ -63,6 +66,7 @@ public class MasterVolumeController : MonoBehaviour{
     }
 
     private void SetSoundVolume(float volume){
+        PlayerPrefs.SetFloat(SoundVolumeParameter, volume);
         float decibels = volume <= 0f ? MutedDecibels : Mathf.Log10(volume) * 20f;
         audioMixer.SetFloat(SoundVolumeParameter, decibels);
 

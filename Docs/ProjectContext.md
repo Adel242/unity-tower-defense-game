@@ -54,6 +54,12 @@ Rutas siguientes relativas a `Assets/Game/Scripts`:
 
 ## Validación y pendientes
 
+Menú de pausa/opciones: reiniciar y salir al menú principal comparten una confirmación serializada en `PauseMenu.unity`, con pregunta y destino según la acción. Sí carga `Game` o `MainMenu` y descarga las escenas anteriores; No/Escape conserva la pausa. El modal bloquea los controles del menú y su Canvas queda sobre las mejoras. Compilación y referencias comprobadas; pendiente validar aspecto e interacción en Play Mode.
+
+Opciones del menú principal: paneles propios centrados de opciones, audio y pantalla en `MainMenu.unity`, editables e independientes de la interfaz de pausa. No cargan `PauseMenu`; comparten `OptionsMenuController`, `ResolutionController` y `MasterVolumeController`. Volver/Escape respeta la navegación local. Volúmenes conservados con PlayerPrefs entre escenas; abrir pantalla no aplica ni reemplaza resoluciones personalizadas. Pendiente comprobación visual y de interacción en Play Mode.
+
+Estilo de pausa: cuadros oscuros, bordes y acentos cálidos similares al menú principal, conservando la ubicación de los grupos. Botones y desplegables resaltan suavemente con Color Tint nativo (0,15 s); no se genera interfaz ni se anima mediante scripts. Pendiente revisión visual en Play Mode.
+
 Sistema de mejoras: `Docs/RunUpgrades.md`. 40 opciones con límites largos, crítico y quemadura; elegir 1 de 3 antes de oleada 1 y después de cada múltiplo de 5. Tarjetas serializadas en Game/Upgrade Selection Canvas. WaveManager controla ofertas y reinicio; RunUpgradeState en TowerData.cs almacena bonos solo de partida. Consumidores deben usar Damage/Range/FireRate/Cost (propiedades efectivas), no campos base. Pruebas de reglas en Tools/UpgradeTests; falta validación visual en Unity.
 
 Flujo inicial: misión → construir libremente → Iniciar oleada → elegir mejora → oleada 1 automática. FEEL anima misión, entrada, foco y confirmación de tarjetas, con escala absoluta y respeto de pausa.
